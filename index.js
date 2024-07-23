@@ -1,10 +1,11 @@
 import { createContext, useContext, useRef, useState } from "react";
+import './index.css';
+import './style.css';
 import AIOInput, { AISelect, AITable, AITabs, AIText } from "aio-input";
 import Icon from "@mdi/react";
 import { mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiContentSave, mdiDelete, mdiDotsHorizontal, mdiDotsVertical, mdiFileCode, mdiHistory, mdiHome, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
 import { AIODate, DragClass, GetRandomNumber } from "aio-utils";
 import AIOPopup from "aio-popup";
-import './index.css';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 const mockTemplate = {
   name: 'template1',
@@ -281,7 +282,7 @@ const RuleEngine = () => {
   return /*#__PURE__*/_jsx(CTX.Provider, {
     value: getContext(),
     children: /*#__PURE__*/_jsxs("div", {
-      className: "rule-engine fullscreen flex-col",
+      className: "rule-engine jfullscreen jflex-col",
       children: [/*#__PURE__*/_jsx(Nav, {}), !!selectedRule ? /*#__PURE__*/_jsx(RulePage, {}) : /*#__PURE__*/_jsx(Home, {}), popup.render()]
     })
   });
@@ -345,7 +346,7 @@ const RulePage = () => {
   const [tab, setTab] = useState('variables');
   function left_side_layout() {
     return /*#__PURE__*/_jsxs("div", {
-      className: "w-204 flex-col shrink-0 rule-engine-border-right",
+      className: "jw-204 jflex-col jshrink-0 rule-engine-border-right",
       children: [/*#__PURE__*/_jsx(AITabs, {
         value: tab,
         onChange: tab => setTab(tab),
@@ -360,7 +361,7 @@ const RulePage = () => {
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: " flex-row flex-1",
+    className: " jflex-row jflex-1",
     children: [left_side_layout(), /*#__PURE__*/_jsx(RuleCode, {}), /*#__PURE__*/_jsx(History, {})]
   });
 };
@@ -380,10 +381,10 @@ const Nav = () => {
         className: "rule-engine-rule-name",
         children: selectedRule.name
       }), /*#__PURE__*/_jsx("div", {
-        className: "flex-row w-144 align-vh",
+        className: "jflex-row jw-144 jalign-vh",
         children: /*#__PURE__*/_jsxs("button", {
           type: "button",
-          className: "flex-row align-v gap-6",
+          className: "jflex-row jalign-v jgap-6",
           onClick: () => selectRule(undefined),
           children: [/*#__PURE__*/_jsx(Icon, {
             path: mdiHome,
@@ -427,15 +428,15 @@ const Variables = () => {
   }
   function item_layout(item, index) {
     return /*#__PURE__*/_jsxs("div", {
-      className: "flex-row p-6 brd-c-5 flex-row align-v",
+      className: "jflex-row jp-6 jbrd-c-5 jflex-row jalign-v",
       ...Drag.getDragAttrs({
         item
       }),
       children: [/*#__PURE__*/_jsx("div", {
-        className: "flex-1",
+        className: "jflex-1",
         children: item.text
       }), /*#__PURE__*/_jsx("div", {
-        className: "w-24 h-24 flex-row align-vh",
+        className: "jw-24 jh-24 jflex-row jalign-vh",
         onClick: () => removeVariable(index),
         children: /*#__PURE__*/_jsx(Icon, {
           path: mdiClose,
@@ -446,10 +447,10 @@ const Variables = () => {
   }
   function hedaer_layout() {
     return /*#__PURE__*/_jsx("div", {
-      className: "msf flex-row align-v p-6 align-vh",
+      className: "msf jflex-row jalign-v jp-6 jalign-vh",
       children: /*#__PURE__*/_jsxs("button", {
         type: "button",
-        className: "flex-row align-v",
+        className: "jflex-row jalign-v",
         style: {
           color: 'orange',
           background: 'none'
@@ -467,7 +468,7 @@ const Variables = () => {
       return null;
     }
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-col gap-3 p-3 flex-1 ofy-auto",
+      className: "jflex-col jgap-3 jp-3 jflex-1 jofy-auto",
       children: selectedVariables.map((o, i) => item_layout(o, i))
     });
   }
@@ -504,13 +505,13 @@ const RuleCode = () => {
       return null;
     }
     return /*#__PURE__*/_jsxs("div", {
-      className: "flex-row align-v",
+      className: "jflex-row jalign-v",
       children: [template_cells_layout(cells, rowIndex), options_layout()]
     });
   }
   function options_layout() {
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-row align-vh",
+      className: "jflex-row jalign-vh",
       children: /*#__PURE__*/_jsx(Icon, {
         path: mdiDotsVertical,
         size: 0.8
@@ -519,7 +520,7 @@ const RuleCode = () => {
   }
   function template_cells_layout(cells, rowIndex) {
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-row flex-1 align-v gap-6 h-100",
+      className: "jflex-row jflex-1 jalign-v jgap-6 jh-100",
       children: cells.map((cell, cellIndex) => /*#__PURE__*/_jsx(CodeCell, {
         cell: cell,
         rowIndex: rowIndex,
@@ -528,7 +529,7 @@ const RuleCode = () => {
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: "flex-col w-100 rule-engine-border-left rule-engine-border-right",
+    className: "jflex-col jw-100 rule-engine-border-left rule-engine-border-right",
     children: [/*#__PURE__*/_jsx(AITabs, {
       value: mode,
       onChange: mode => setMode(mode),
@@ -540,7 +541,7 @@ const RuleCode = () => {
         value: 'preview'
       }],
       before: /*#__PURE__*/_jsxs("button", {
-        className: "rule-engine-save align-v flex-row gap-6 fs-14 bold",
+        className: "rule-engine-save jalign-v jflex-row jgap-6 jfs-14 jbold",
         onClick: submitRuleChange,
         children: [/*#__PURE__*/_jsx(Icon, {
           path: mdiContentSave,
@@ -548,7 +549,7 @@ const RuleCode = () => {
         }), trans('Save')]
       })
     }), /*#__PURE__*/_jsx("div", {
-      className: "flex-col flex-1 p-12 gap-3 ofy-auto w-100",
+      className: "jflex-col jflex-1 jp-12 jgap-3 jofy-auto jw-100",
       children: template_rows_layout()
     })]
   });
@@ -567,7 +568,7 @@ const CodeCell = ({
     let value = model[selectfield];
     return /*#__PURE__*/_jsx(AIOInput, {
       type: "select",
-      className: "w-fit bg-l-5 brd-none",
+      className: "jw-fit jbg-l-5 jbrd-none",
       options: options,
       value: value,
       onChange: newValue => changeModelByField(selectfield, newValue),
@@ -583,7 +584,7 @@ const CodeCell = ({
   function text_layout(field) {
     return /*#__PURE__*/_jsx(AIOInput, {
       type: "text",
-      className: "w-fit bg-l-5 brd-none",
+      className: "jw-fit jbg-l-5 jbrd-none",
       value: model[field] || '',
       onChange: newValue => changeModelByField(field, newValue),
       validations: ['required'],
@@ -600,7 +601,7 @@ const CodeCell = ({
         ...dragAttrs
       },
       type: "textarea",
-      className: "flex-1 bg-l-5 brd-none",
+      className: "jflex-1 jbg-l-5 jbrd-none",
       inputAttrs: {
         className: 'resize-v'
       },
@@ -628,7 +629,7 @@ const CodeCell = ({
     return /*#__PURE__*/_jsx(Indent, {});
   }
   return /*#__PURE__*/_jsx("div", {
-    className: "flex-row",
+    className: "jflex-row",
     children: cell
   });
 };
@@ -639,7 +640,7 @@ const History = () => {
   } = useContext(CTX);
   function header_layout() {
     return /*#__PURE__*/_jsxs("div", {
-      className: "msf flex-row align-v p-6 align-vh bg-d-20 fs-14 gap-6",
+      className: "msf jflex-row jalign-v jp-6 jalign-vh jbg-d-20 jfs-14 jgap-6",
       style: {
         color: 'orange'
       },
@@ -651,11 +652,11 @@ const History = () => {
   }
   function item_layout(historyItems) {
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-row p-6 brd-c-5 flex-row align-v",
+      className: "jflex-row jp-6 jbrd-c-5 jflex-row jalign-v",
       children: /*#__PURE__*/_jsxs("div", {
-        className: "flex-1 flex-row align-v",
+        className: "jflex-1 jflex-row jalign-v",
         children: [/*#__PURE__*/_jsx("div", {
-          className: "w-36 h-24 flex-row align-vh",
+          className: "jw-36 jh-24 jflex-row jalign-vh",
           style: {
             color: 'orange'
           },
@@ -664,7 +665,7 @@ const History = () => {
             size: 0.7
           })
         }), /*#__PURE__*/_jsx("div", {
-          className: "fs-12",
+          className: "jfs-12",
           children: historyItems.date
         })]
       })
@@ -672,12 +673,12 @@ const History = () => {
   }
   function items_layout() {
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-col gap-3 p-3 flex-1 ofy-auto",
+      className: "jflex-col jgap-3 jp-3 jflex-1 jofy-auto",
       children: history.reverse().map(o => item_layout(o))
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: "w-204 flex-col shrink-0 rule-engine-border-left",
+    className: "jw-204 jflex-col jshrink-0 rule-engine-border-left",
     children: [header_layout(), " ", items_layout()]
   });
 };
@@ -712,7 +713,7 @@ const Home = () => {
   }
   function part_header_layout(label, onAdd) {
     return /*#__PURE__*/_jsxs("div", {
-      className: "fs-24 m-b-12 flex-row align-between align-v w-100 p-h-12 h-48",
+      className: "jfs-24 jm-b-12 jflex-row jalign-between jalign-v jw-100 jp-jh-12 jh-48",
       style: {
         color: 'orange',
         background: 'rgba(255,255,255,0.2)'
@@ -721,7 +722,7 @@ const Home = () => {
         className: "msf",
         children: label
       }), /*#__PURE__*/_jsx("div", {
-        className: "flex-row align-vh pointer",
+        className: "jflex-row jalign-vh pointer",
         onClick: onAdd,
         children: /*#__PURE__*/_jsx(Icon, {
           path: mdiPlusCircleOutline,
@@ -732,13 +733,13 @@ const Home = () => {
   }
   function part_body_layout(items) {
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-1 ofy-auto flex-col gap-12 w-100 align-h p-12",
+      className: "jflex-1 jofy-auto jflex-col jgap-12 jw-100 jalign-h jp-12",
       children: items
     });
   }
   function part_layout(label, items, onAdd) {
     return /*#__PURE__*/_jsxs("div", {
-      className: "flex-col align-h h-100 p-12 br-12 w-100",
+      className: "jflex-col jalign-h jh-100 jp-12 jbr-12 jw-100",
       children: [part_header_layout(label, onAdd), " ", part_body_layout(items)]
     });
   }
@@ -782,7 +783,7 @@ const Home = () => {
           className: "",
           children: text
         }), subtext !== undefined && /*#__PURE__*/_jsx("div", {
-          className: "op-60 fs-p70",
+          className: "jop-60 jfs-p70",
           children: subtext
         })]
       }), /*#__PURE__*/_jsx("div", {
@@ -815,7 +816,7 @@ const Home = () => {
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: "flex-row align-h flex-1 p-12",
+    className: "jflex-row jalign-h jflex-1 jp-12",
     children: [rules_layout(), " ", templates_layout()]
   });
 };
@@ -849,23 +850,23 @@ const Template = props => {
       submitText = 'Add';
     }
     return /*#__PURE__*/_jsxs("div", {
-      className: "bg-d-20 p-h-24 fs-14 bold flex-row h-36 align-v",
+      className: "jbg-d-20 jp-jh-24 jfs-14 jbold jflex-row jh-36 jalign-v",
       children: [title, /*#__PURE__*/_jsx("div", {
-        className: "flex-1"
+        className: "jflex-1"
       }), /*#__PURE__*/_jsx("button", {
         onClick: () => props.onSubmit(template),
         style: {
           background: 'orange',
           border: 'none'
         },
-        className: "br-4 h-30 w-72",
+        className: "jbr-4 jh-30 jw-72",
         children: submitText
       })]
     });
   }
   function body_layout() {
     return /*#__PURE__*/_jsx("div", {
-      className: "flex-col p-24",
+      className: "jflex-col jp-24",
       children: template.rows.map((o, rowIndex) => /*#__PURE__*/_jsx(TemplateRow, {
         row: o,
         rowIndex: rowIndex
@@ -950,7 +951,7 @@ const Template = props => {
   return /*#__PURE__*/_jsx(TemplateContext.Provider, {
     value: getContext(),
     children: /*#__PURE__*/_jsxs("div", {
-      className: "h-100 w-100 ofy-auto",
+      className: "jh-100 jw-100 jofy-auto",
       children: [header_layout(), " ", body_layout()]
     })
   });
@@ -965,10 +966,10 @@ const TemplateRow = ({
   } = useContext(TemplateContext);
   function addCell_layout(rowIndex, isEmptyRow) {
     return /*#__PURE__*/_jsxs("div", {
-      className: "flex-row align-v",
+      className: "jflex-row jalign-v",
       children: [/*#__PURE__*/_jsx("button", {
         type: "button",
-        className: "bg-none brd-none w-24 h-24 flex-row align-vh p-0",
+        className: "jbg-none jbrd-none jw-24 jh-24 jflex-row jalign-vh jp-0",
         style: {
           color: 'orange',
           opacity: isEmptyRow ? 0 : 1
@@ -979,7 +980,7 @@ const TemplateRow = ({
           size: 0.7
         })
       }), /*#__PURE__*/_jsx(AISelect, {
-        className: "w-24 h-24 p-0 m-l-6 brd-none p-0",
+        className: "jw-24 jh-24 jp-0 jm-l-6 jbrd-none jp-0",
         caret: false,
         style: {
           color: 'lightgreen',
@@ -1013,11 +1014,11 @@ const TemplateRow = ({
         }],
         onChange: v => addCell(v, rowIndex, isEmptyRow)
       })]
-    }, `addRow-${rowIndex}-${isEmptyRow}`);
+    }, `addRojw-${rowIndex}-${isEmptyRow}`);
   }
   return /*#__PURE__*/_jsxs(_Fragment, {
     children: [/*#__PURE__*/_jsxs("div", {
-      className: "flex-row align-v gap-12",
+      className: "jflex-row jalign-v jgap-12",
       children: [addCell_layout(rowIndex, false), row.cells.map((o, cellIndex) => /*#__PURE__*/_jsx(TemplateCell, {
         cell: o,
         rowIndex: rowIndex,
@@ -1057,7 +1058,7 @@ const TemplateCell = ({
   function getContent() {
     if (cell === 'indent') {
       return /*#__PURE__*/_jsx("div", {
-        className: "w-16 h-24 flex-row align-vh m-2 op-15",
+        className: "jw-16 jh-24 jflex-row jalign-vh jm-2 jop-15",
         children: /*#__PURE__*/_jsx(Icon, {
           path: mdiArrowExpandHorizontal,
           size: 0.8
@@ -1066,7 +1067,7 @@ const TemplateCell = ({
     }
     if (cell.indexOf('text(') === 0) {
       return /*#__PURE__*/_jsx("div", {
-        className: "p-h-6 br-4",
+        className: "jp-jh-6 jbr-4",
         style: {
           background: '#0069ff'
         },
@@ -1075,7 +1076,7 @@ const TemplateCell = ({
     }
     if (cell.indexOf('textarea(') === 0) {
       return /*#__PURE__*/_jsx("div", {
-        className: "p-h-6 br-4",
+        className: "jp-jh-6 jbr-4",
         style: {
           background: '#0069ff'
         },
@@ -1090,20 +1091,20 @@ const TemplateCell = ({
   function select_layout(cell, rowIndex, cellIndex) {
     const options = JSON.parse(cell.slice(7, cell.length - 1));
     return /*#__PURE__*/_jsxs("div", {
-      className: "p-h-6 br-4 relative pointer flex-row align-v",
+      className: "jp-jh-6 jbr-4 jrelative jpointer jflex-row jalign-v",
       style: {
         background: '#0069ff'
       },
       onClick: () => openOptionsModal(options, rowIndex, cellIndex),
       children: ["Select", /*#__PURE__*/_jsx("div", {
-        className: "fs-p70 op-70 m-l-6",
+        className: "jfs-p70 jop-70 jm-l-6",
         children: ` ( ${options.length} options )`
       }), select_cell_icon()]
     });
   }
   function select_cell_icon() {
     return /*#__PURE__*/_jsx("div", {
-      className: "absolute w-16 h-16 flex-row align-vh br-100",
+      className: "jabsolute jw-16 jh-16 jflex-row jalign-vh jbr-100",
       style: {
         background: 'orange',
         top: -8,
@@ -1123,19 +1124,19 @@ const TemplateCell = ({
         width
       },
       autoHighlight: false,
-      className: "bg-0 p-h-0 br-4 m-l-6 brd-none h-24",
+      className: "jbg-0 jp-jh-0 jbr-4 jm-l-6 jbrd-none jh-24",
       onChange: newValue => changeCell(newValue, rowIndex, cellIndex)
     });
   }
   return /*#__PURE__*/_jsx("div", {
-    className: "flex-row align-v",
+    className: "jflex-row jalign-v",
     children: getContent()
   }, `rowIndex-${rowIndex}-cellIndex-${cellIndex}`);
 };
 const Indent = () => /*#__PURE__*/_jsx("div", {
-  className: "w-12 h-100 shrink-0 flex-row align-v shrink-0",
+  className: "jw-12 jh-100 jshrink-0 jflex-row jalign-v jshrink-0",
   children: /*#__PURE__*/_jsx("div", {
-    className: "w-1 h-100 bg-l-20"
+    className: "jw-1 jh-100 jbg-l-20"
   })
 });
 const CellOptions = props => {
@@ -1143,7 +1144,7 @@ const CellOptions = props => {
     text
   })));
   return /*#__PURE__*/_jsxs("div", {
-    className: "p-12",
+    className: "jp-12",
     children: [/*#__PURE__*/_jsx(AITable, {
       value: options,
       rowGap: 1,
@@ -1166,7 +1167,7 @@ const CellOptions = props => {
         text: ''
       }]),
       addText: /*#__PURE__*/_jsxs("div", {
-        className: "flex-row align-v p-h-12 h-24 br-4 m-h-6 bold m-3",
+        className: "jflex-row jalign-v jp-jh-12 jh-24 jbr-4 jm-jh-6 jbold jm-3",
         style: {
           color: 'orange'
         },
@@ -1178,10 +1179,10 @@ const CellOptions = props => {
       onRemove: true,
       onChange: newOptions => setOptions(newOptions)
     }), /*#__PURE__*/_jsx("div", {
-      className: "h-36 flex-row align-v p-v-6",
+      className: "jh-36 jflex-row jalign-v jp-v-6",
       children: /*#__PURE__*/_jsxs("button", {
         type: "button",
-        className: "brd-none br-4 p-v-3 p-h-12 bold fs-14 c-4 flex-row align-v gap-6",
+        className: "jbrd-none jbr-4 jp-v-3 jp-jh-12 jbold jfs-14 jc-4 jflex-row jalign-v jgap-6",
         style: {
           background: 'orange'
         },
