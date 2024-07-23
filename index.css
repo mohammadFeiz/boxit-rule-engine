@@ -1,0 +1,177 @@
+.rule-engine-nav{
+    height:36px;
+    display:flex;
+    align-items: center;
+    padding:0 19px;
+}
+.rule-engine-nav button{
+    background:none;
+    color:orange;
+}
+.rule-engine-app-title{
+    color:orange;
+    font-weight: bold;
+    font-size:16px;
+    letter-spacing: 3px;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
+}
+.rule-engine .aio-input.has-error{
+    border:1px solid rgb(187, 33, 33) !important;
+}
+.part-button{
+    height:72px;
+    width:240px; 
+    gap:6px;
+    box-shadow: 2px 2px 4px 1px rgba(0,0,0,0.7);
+    transition:transform 0.5s;
+    cursor: pointer;
+    font-size:16px;
+    position: relative;
+    border-radius:12px;
+}
+.part-button-body{
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background:rgba(0,0,0,0.4);
+    border-radius:12px;
+    
+}
+.part-button-body:hover{
+    background:orange;
+    transform: scale(1.02);
+    transition: transform 0.5s;
+    color:#333;
+    font-size:18px;
+    font-weight:bold;
+}
+.part-button-remove{
+    position: absolute;
+    top:-4px;
+    right:-8px;
+    background:#555;
+    width:24px;
+    height:24px;
+    border-radius:100%;
+    display:flex;
+    align-items: center;
+    color:#fff;
+    justify-content: center;
+}
+
+.part-button .part-button-remove:hover{
+    background: orange;
+    color:#555; 
+
+}
+.rule-engine-rule-name{
+    flex:1;
+    display:flex;
+    align-items: center;
+    justify-content: center;
+}
+.rule-engine-save{
+    background:none;
+    color:orange;
+}
+.rule-engine{
+    color:#ddd;
+    background:#222;
+}
+.rule-engine .aio-input-tabs{
+    background:rgba(0,0,0,0.2);
+}
+.rule-engine .aio-input-tabs-option.active{
+    color:orange;
+}
+.rule-engine .aio-popup-body{
+    background:#333
+}
+.rule-engine .aio-input-select-option{
+    border-bottom:1px solid rgba(255,255,255,0.1)
+}
+.rule-engine .aio-popup-header{
+    background:#333;
+    color:#fff;
+    border-bottom:1px solid rgba(0,0,0,0.4)
+}
+.rule-engine .aio-popup-body{
+    border-top:1px solid rgba(255,255,255,0.2);
+    border-bottom:1px solid rgba(0,0,0,0.4);
+}
+.rule-engine .aio-popup-footer{
+    background:#333;
+    border-top:1px solid rgba(255,255,255,0.2)
+}
+.rule-engine .aio-popup-prompt textarea{
+    background:#222;
+    
+}
+.rule-engine .aio-popup-footer button{
+    color:orange;
+    background: none;
+    padding:3px 24px;
+    border-radius:4px;
+}
+.rule-engine .aio-popup-footer button.active{
+    background:#ffa500;
+    color:#000;
+    border-color:#ffb938 #c78408 #c78408 #ffb938
+}
+.rule-engine-border-left{
+    border-left:2px solid rgba(255,255,255,0.1);
+}
+.rule-engine-border-right{
+    border-right:2px solid rgba(0,0,0,0.4);
+}
+.rule-engine-options-table{
+    background:#222;
+    border:none;
+    border-radius:8px;
+    overflow:hidden
+}
+.rule-engine-options-table .aio-input-table-header{
+    background:rgba(255,255,255,0.1) !important;
+    color:#aaa;
+    border-bottom:none;
+}
+.rule-engine-options-table .aio-input-table-row{
+    background:rgba(0,0,0,0.3) !important;
+}
+.rule-engine-options-table .aio-input-table-toolbar{
+    background:rgba(0,0,0,0.3) !important;
+}
+.rule-engine-options-table .aio-input-table-cell .aio-input{
+    background:none
+}
+.add-rule{
+    background:#111;
+    padding:24px;
+    box-sizing: border-box;
+    display:flex;
+    flex-direction: column;
+}
+.add-rule button{
+    background:orange;
+    height:36px;
+    border-radius:4px;
+    border:none;
+    color:#333;
+}
+.add-rule button:disabled{
+    cursor:not-allowed;
+    opacity:0.5;
+
+}
+.add-rule .aio-input{
+    margin-bottom:16px;
+    background:#222;
+    border:none;
+}
+.add-rule-label{
+    font-size:14px;
+    margin-bottom:3px;
+}
