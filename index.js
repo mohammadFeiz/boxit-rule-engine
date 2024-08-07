@@ -1,114 +1,185 @@
-import { createContext, useContext, useRef, useState } from "react";
-import './index.css';
-import './style.css';
-import AIOInput, { AISelect, AITable, AITabs, AIText } from "aio-input";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import AIOInput, { Code, AISelect, AITable, AITabs, AIText, AIButtons, AIDate, AICard, AIPanel, AISwitch } from "aio-input";
 import Icon from "@mdi/react";
-import { mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiContentSave, mdiDelete, mdiDotsHorizontal, mdiDotsVertical, mdiFileCode, mdiHistory, mdiHome, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
+//swagger
+//http://192.168.88.243:8090/swagger-ui/index.html#/rule-controller/update
+import { mdiAlert, mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiCloseCircle, mdiDelete, mdiDotsHorizontal, mdiFileCode, mdiHistory, mdiHome, mdiInformation, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
 import { AIODate, DragClass, GetRandomNumber } from "aio-utils";
 import AIOPopup from "aio-popup";
+import AIOApis from "aio-apis";
+import './index.css';
+import './style.css';
+import './theme2.css';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-const mockTemplate = {
-  name: 'template1',
-  id: 1235565,
-  rows: [{
-    cells: ['import com.boxi.ruleEngine.dto.RuleFact;']
-  }, {
-    cells: ['rule', 'text()']
-  }, {
-    cells: ['indent', 'no-loop', 'select(["true","false"])']
-  }, {
-    cells: ['indent', 'lock-on-active', 'select(["true","false"])']
-  }, {
-    cells: ['indent', 'when']
-  }, {
-    cells: ['indent', 'indent', 'ruleFact:RuleFact(']
-  }, {
-    cells: ['indent', 'indent', 'indent', 'textarea()']
-  }, {
-    cells: ['indent', 'indent', ')']
-  }, {
-    cells: ['indent', 'then']
-  }, {
-    cells: ['indent', 'indent', 'textarea()']
-  }, {
-    cells: ['end']
-  }]
-};
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 const CTX = /*#__PURE__*/createContext({});
-const RuleEngine = () => {
-  const [rules, setRules] = useState(getRules);
-  const [templates, setTemplates] = useState(getTemplates);
+const RuleEngine = ({
+  onExit,
+  token,
+  variables = [],
+  baseUrl
+}) => {
+  const [rules, setRules] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [selectedRule, setSelectedRule] = useState();
-  const [selectedVariables, setSelectedVariables] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState();
   const [popup] = useState(new AIOPopup());
   const [model, setModel] = useState({});
-  const [history, setHistory] = useState(getHistory);
-  function getTemplates() {
-    return [mockTemplate];
+  const [errors, setErrors] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [apis] = useState(new apisClass(token, baseUrl));
+  let [validateTimeout] = useState();
+  useEffect(() => {
+    getRules();
+    getTemplates();
+    getHistory();
+  }, []);
+  useEffect(() => {
+    validateCode();
+  }, [!!selectedRule, JSON.stringify(model)]);
+  async function getTemplates() {
+    const templates = await apis.get_templates();
+    setTemplates(templates);
   }
   function trans(v) {
     const dic = {};
     return dic[v] || v;
   }
-  function getRules() {
-    return [{
-      model: {},
-      text: 'text',
-      name: 'Rule1',
-      id: 0,
-      date: '1403/3/3',
-      templateId: 1235565,
-      variables: [{
-        text: '$c'
-      }, {
-        text: '$w'
-      }]
-    }, {
-      model: {},
-      text: 'text',
-      name: 'Rule2',
-      id: 1,
-      date: '1403/3/3',
-      templateId: 1235565,
-      variables: [{
-        text: '$c'
-      }, {
-        text: '$w'
-      }]
-    }, {
-      model: {},
-      text: 'text',
-      name: 'Rule3',
-      id: 2,
-      date: '1403/3/3',
-      templateId: 1235565,
-      variables: [{
-        text: '$c'
-      }, {
-        text: '$w'
-      }]
-    }];
+  function getFieldByIndex(rowIndex, cellIndex) {
+    return `field-${rowIndex}-${cellIndex}`;
+  }
+  function getIndexByField(field) {
+    const [starter, rowIndex, cellIndex] = field.split('-');
+    return {
+      rowIndex: +rowIndex,
+      cellIndex: +cellIndex,
+      starter
+    };
+  }
+  function getDynamicByModel(model) {
+    let res = {};
+    for (let prop in model) {
+      const {
+        rowIndex,
+        cellIndex
+      } = getIndexByField(prop);
+      let row = res['a' + rowIndex] || {};
+      row['a' + cellIndex] = {
+        field: prop,
+        value: model[prop]
+      };
+      res['a' + rowIndex] = row;
+    }
+    return res;
+  }
+  function validateCode() {
+    clearTimeout(validateTimeout);
+    validateTimeout = setTimeout(async () => {
+      if (selectedRule) {
+        const code = generatePreview();
+        const fixedCode = code.replace(/\n/g, ' ');
+        console.log(fixedCode);
+        const res = await apis.validate(fixedCode);
+        changeRule({
+          finalCode: code
+        });
+        setErrors(res);
+      }
+    }, 1000);
+  }
+  function generatePreview() {
+    const template = selectedTemplate;
+    if (!template) {
+      return '';
+    }
+    let preview = '\n';
+    let dynamic_dic = getDynamicByModel(model);
+    for (let rowIndex = 0; rowIndex < template.rows.length; rowIndex++) {
+      const row = template.rows[rowIndex];
+      for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex++) {
+        const cell = row.cells[cellIndex];
+        if (dynamic_dic['a' + rowIndex] && dynamic_dic['a' + rowIndex]['a' + cellIndex]) {
+          const {
+            value
+          } = dynamic_dic['a' + rowIndex]['a' + cellIndex];
+          preview += value + ' ';
+        } else if (cell === 'indent') {
+          preview += '  ';
+        } else if (cell.indexOf('text(') === 0) {
+          preview += '';
+        } else if (cell.indexOf('textarea(') === 0) {
+          preview += '';
+        } else if (cell.indexOf('select(') === 0) {
+          preview += '';
+        } else {
+          preview += cell + ' ';
+        }
+      }
+      preview += '\n';
+    }
+    return preview;
+  }
+  function generateRuleByState(obj) {
+    return {
+      ...selectedRule,
+      model: {
+        ...model
+      },
+      finalCode: generatePreview(),
+      ...obj
+    };
+  }
+  async function getRules() {
+    const rules = await apis.get_rules();
+    console.log(rules);
+    setRules(rules);
+  }
+  async function addRule() {
+    if (!selectedRule) {
+      return false;
+    }
+    const res = await apis.add_rule({
+      ...selectedRule,
+      model: JSON.stringify(model)
+    });
+    if (res !== false) {
+      const newRule = generateRuleByState({
+        id: res
+      });
+      setRules([...rules, newRule]);
+      return true;
+    }
+    return false;
+  }
+  async function editRule() {
+    if (!selectedRule) {
+      return false;
+    }
+    const res = await apis.edit_rule({
+      ...selectedRule,
+      model: JSON.stringify(model)
+    });
+    if (res !== false) {
+      const newRule = generateRuleByState();
+      const newRules = rules.map(o => o.id === newRule.id ? newRule : o);
+      setRules(newRules);
+      return true;
+    }
+    return false;
   }
   function selectRule(rule) {
     if (rule) {
       changeModel(rule.model);
-      changeSelectedVariables(rule.variables || []);
+      const template = templates.find(o => o.id === rule.templateId);
+      if (template) {
+        changeSelectedTemplate(template);
+      } else {
+        console.error('error543467344');
+      }
     }
-    setSelectedRule(rule);
-  }
-  function addRule(name, templateId) {
-    const DATE = new AIODate();
-    const newRule = {
-      variables: [],
-      text: '',
-      templateId,
-      name,
-      model: {},
-      id: GetRandomNumber(100000, 900000),
-      date: DATE.getDateByPattern(DATE.getToday(), '{year}/{month}/{day} {hour}:{minute}')
-    };
-    setRules([...rules, newRule]);
-    return true;
+    setSelectedRule(rule ? JSON.parse(JSON.stringify(rule)) : undefined);
   }
   function removeRule(id) {
     const rule = rules.find(o => o.id === id);
@@ -120,27 +191,15 @@ const RuleEngine = () => {
       subtitle: rule.name,
       text: 'َAre You Sure Want To Remove This Rule?',
       onSubmit: async () => {
-        setRules(rules.filter(o => o.id !== id));
-        return true;
+        const res = await apis.remove_rule(rule.id);
+        if (res) {
+          setRules(rules.filter(o => o.id !== id));
+          return true;
+        }
+        return false;
       },
-      onCansel: () => {
-        popup.removeModal();
-      }
+      onCansel: () => popup.removeModal()
     });
-  }
-  function submitRuleChange() {
-    const DATE = new AIODate();
-    if (!selectedRule) {
-      return;
-    }
-    const newRule = {
-      ...selectedRule,
-      variables: selectedVariablesRef.current,
-      model: modelRef.current,
-      date: DATE.getDateByPattern(DATE.getToday(), '{year}/{month}/{day} {hour}:{minute}')
-    };
-    setRules(rules.map(o => o.id === selectedRule.id ? newRule : o));
-    setSelectedRule(undefined);
   }
   function removeTemplate(id) {
     const template = templates.find(o => o.id === id);
@@ -172,89 +231,90 @@ const RuleEngine = () => {
           });
           return false;
         }
-        setTemplates(templates.filter(o => o.id !== id));
-        return true;
+        const res = await apis.remove_template(id);
+        if (res) {
+          setTemplates(templates.filter(o => o.id !== id));
+          return true;
+        }
+        return false;
       },
-      onCansel: () => {
-        popup.removeModal();
-      }
+      onCansel: () => popup.removeModal()
     });
   }
-  function getHistory() {
-    return [{
-      model: {},
-      date: '1403/2/3 12:00',
-      text: 'text',
-      name: 'Rule1',
-      id: 0,
-      templateId: 0,
-      variables: [{
-        text: '$c'
-      }, {
-        text: '$w'
-      }]
-    }, {
-      model: {},
-      date: '1403/3/3 12:00',
-      text: 'text',
-      name: 'Rule1',
-      id: 0,
-      templateId: 0,
-      variables: [{
-        text: '$c'
-      }, {
-        text: '$w'
-      }]
-    }, {
-      model: {},
-      date: '1403/3/4 12:00',
-      text: 'text',
-      name: 'Rule1',
-      id: 0,
-      templateId: 0,
-      variables: [{
-        text: '$c'
-      }, {
-        text: '$w'
-      }]
-    }];
+  async function getHistory() {
+    const res = await apis.history();
+    setHistory(res);
   }
   const modelRef = useRef(model);
   modelRef.current = model;
-  const selectedVariablesRef = useRef(selectedVariables);
-  selectedVariablesRef.current = selectedVariables;
   const [Drag] = useState(new DragClass({
     callback: onDrag
   }));
-  function changeTemplates(newTemplates) {
-    setTemplates([...newTemplates]);
+  async function addTemplate(newTemplate) {
+    const res = await apis.add_template({
+      ...newTemplate,
+      id: undefined
+    });
+    if (typeof res === 'number') {
+      setTemplates([...templates, {
+        ...newTemplate,
+        id: res
+      }]);
+      return true;
+    }
+    return false;
+  }
+  async function editTemplate(newTemplate) {
+    const res = await apis.edit_template(newTemplate);
+    if (res) {
+      setTemplates(templates.map(o => o.id === newTemplate.id ? newTemplate : o));
+      return true;
+    }
+    return false;
   }
   function onDrag(dragData, dropData) {
-    const model = modelRef.current;
-    const {
-      item
-    } = dragData;
-    const {
-      field
-    } = dropData;
-    const newValue = (model[field] || '') + item.text;
+    const model = modelRef.current,
+      {
+        item,
+        type
+      } = dragData,
+      {
+        field
+      } = dropData;
+    let newValue = model[field] || '';
+    if (type === 'variable') {
+      newValue += item.text;
+    } else if (type === 'rule') {
+      newValue += item.finalCode;
+    }
     changeModel({
       ...model,
       [field]: newValue
     });
   }
   function changeModel(newModel) {
+    const finalCode = generatePreview();
+    setSelectedRule({
+      ...selectedRule,
+      finalCode
+    });
     setModel({
       ...newModel
     });
   }
-  function changeSelectedVariables(newVariables) {
-    setSelectedVariables([...newVariables]);
+  function changeRule(obj) {
+    const newSelectedRule = {
+      ...selectedRule,
+      ...obj
+    };
+    setSelectedRule(newSelectedRule);
+  }
+  function changeSelectedTemplate(template) {
+    setSelectedTemplate(template);
   }
   function changeModelByField(field, value) {
-    const model = modelRef.current;
     changeModel({
-      ...model,
+      ...modelRef.current,
       [field]: value
     });
   }
@@ -269,122 +329,93 @@ const RuleEngine = () => {
       changeModelByField,
       history,
       templates,
-      changeTemplates,
+      addTemplate,
+      editTemplate,
       trans,
       removeRule,
       removeTemplate,
       addRule,
-      submitRuleChange,
-      selectedVariables: selectedVariablesRef.current,
-      changeSelectedVariables
+      getFieldByIndex,
+      getIndexByField,
+      variables,
+      getDynamicByModel,
+      generatePreview,
+      apis,
+      editRule,
+      onExit,
+      selectedTemplate,
+      changeSelectedTemplate,
+      changeRule,
+      errors,
+      validateCode
     };
   }
   return /*#__PURE__*/_jsx(CTX.Provider, {
     value: getContext(),
     children: /*#__PURE__*/_jsxs("div", {
-      className: "rule-engine jfullscreen jflex-col",
+      className: "rule-engine jfullscreen jflex-col theme2",
       children: [/*#__PURE__*/_jsx(Nav, {}), !!selectedRule ? /*#__PURE__*/_jsx(RulePage, {}) : /*#__PURE__*/_jsx(Home, {}), popup.render()]
     })
   });
 };
 export default RuleEngine;
-const AddRule = ({
-  onSubmit
-}) => {
-  const {
-    templates
-  } = useContext(CTX);
-  const [name, setName] = useState('');
-  const [templateId, setTemplateId] = useState();
-  const [errors, setErrors] = useState({});
-  return /*#__PURE__*/_jsxs("div", {
-    className: "add-rule",
-    children: [/*#__PURE__*/_jsx("div", {
-      className: "add-rule-label",
-      children: "Rule Name"
-    }), /*#__PURE__*/_jsx(AIText, {
-      value: name,
-      onChange: v => setName(v),
-      validations: ['required'],
-      lang: "en",
-      reportError: error => setErrors({
-        ...errors,
-        name: error
-      })
-    }), /*#__PURE__*/_jsx("div", {
-      className: "add-rule-label",
-      children: "Rule Template"
-    }), /*#__PURE__*/_jsx(AISelect, {
-      options: templates,
-      subtext: templateId !== undefined ? templateId : undefined,
-      validations: ['required'],
-      value: templateId,
-      option: {
-        text: 'option.name',
-        value: 'option.id',
-        subtext: option => option.id
-      },
-      popover: {
-        fitHorizontal: true
-      },
-      onChange: templateId => setTemplateId(templateId),
-      reportError: error => setErrors({
-        ...errors,
-        template: error
-      })
-    }), /*#__PURE__*/_jsx("div", {
-      className: "msf"
-    }), /*#__PURE__*/_jsx("button", {
-      type: "button",
-      disabled: !!errors.name || !!errors.template,
-      onClick: () => onSubmit(name, templateId),
-      children: "Add Rule"
-    })]
-  });
-};
 const RulePage = () => {
+  const {
+    selectedRule,
+    selectedTemplate,
+    changeRule,
+    generatePreview
+  } = useContext(CTX);
   const [tab, setTab] = useState('variables');
+  useEffect(() => {
+    if (!(selectedRule !== null && selectedRule !== void 0 && selectedRule.finalCode)) {
+      changeRule({
+        finalCode: generatePreview()
+      });
+    }
+  }, []);
   function left_side_layout() {
     return /*#__PURE__*/_jsxs("div", {
-      className: "jw-204 jflex-col jshrink-0 rule-engine-border-right",
+      className: "jw-204 jflex-col jshrink-0 theme2-border-right jbg-d-90",
       children: [/*#__PURE__*/_jsx(AITabs, {
         value: tab,
         onChange: tab => setTab(tab),
         options: [{
-          text: 'lists',
-          value: 'lists'
+          text: 'rules',
+          value: 'rules'
         }, {
           text: 'variables',
           value: 'variables'
         }]
-      }), tab === 'variables' && /*#__PURE__*/_jsx(Variables, {})]
+      }), tab === 'variables' && /*#__PURE__*/_jsx(Variables, {}), tab === 'rules' && /*#__PURE__*/_jsx(DraggableRules, {})]
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: " jflex-row jflex-1",
-    children: [left_side_layout(), /*#__PURE__*/_jsx(RuleCode, {}), /*#__PURE__*/_jsx(History, {})]
+    className: " jflex-row jflex-1 jh-100 theme2-border-top",
+    children: [left_side_layout(), !!selectedTemplate && /*#__PURE__*/_jsx(Rule, {})]
   });
 };
 const Nav = () => {
   const {
     selectedRule,
     selectRule,
-    trans
+    trans,
+    onExit
   } = useContext(CTX);
   return /*#__PURE__*/_jsxs("nav", {
-    className: "rule-engine-nav",
+    className: "rule-engine-nav theme2-border-bottom",
     children: [/*#__PURE__*/_jsx("div", {
       className: "rule-engine-app-title",
       children: "RULE ENGINE"
     }), !!selectedRule && /*#__PURE__*/_jsxs(_Fragment, {
       children: [/*#__PURE__*/_jsx("div", {
-        className: "rule-engine-rule-name",
+        className: "jflex-1 jflex-row jalign-vh jc-16",
         children: selectedRule.name
       }), /*#__PURE__*/_jsx("div", {
         className: "jflex-row jw-144 jalign-vh",
         children: /*#__PURE__*/_jsxs("button", {
           type: "button",
-          className: "jflex-row jalign-v jgap-6",
+          className: "theme2-button-1",
           onClick: () => selectRule(undefined),
           children: [/*#__PURE__*/_jsx(Icon, {
             path: mdiHome,
@@ -392,76 +423,35 @@ const Nav = () => {
           }), trans('Home')]
         })
       })]
+    }), !selectedRule && /*#__PURE__*/_jsxs(_Fragment, {
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "jflex-1"
+      }), /*#__PURE__*/_jsx("button", {
+        className: "theme2-button-1",
+        onClick: () => onExit(),
+        children: "Exit"
+      })]
     })]
   });
 };
 const Variables = () => {
   const {
-    popup,
     selectedRule,
     Drag,
-    selectedVariables,
-    changeSelectedVariables
+    variables
   } = useContext(CTX);
-  function removeVariable(index) {
-    popup.addConfirm({
-      title: 'Remove Variable',
-      text: 'Are you sure want to remove this variable?',
-      subtitle: selectedVariables[index].text,
-      onSubmit: async () => {
-        changeSelectedVariables(selectedVariables.filter((o, i) => i !== index));
-        return true;
-      }
-    });
-  }
-  function addVariableModal() {
-    popup.addPrompt({
-      title: 'Add Variable',
-      text: 'inter variable',
-      onSubmit: async text => {
-        changeSelectedVariables([...selectedVariables, {
-          text
-        }]);
-        return true;
-      }
-    });
-  }
   function item_layout(item, index) {
-    return /*#__PURE__*/_jsxs("div", {
+    return /*#__PURE__*/_jsx("div", {
       className: "jflex-row jp-6 jbrd-c-5 jflex-row jalign-v",
       ...Drag.getDragAttrs({
-        item
+        item,
+        type: 'variable'
       }),
-      children: [/*#__PURE__*/_jsx("div", {
+      children: /*#__PURE__*/_jsx("div", {
         className: "jflex-1",
         children: item.text
-      }), /*#__PURE__*/_jsx("div", {
-        className: "jw-24 jh-24 jflex-row jalign-vh",
-        onClick: () => removeVariable(index),
-        children: /*#__PURE__*/_jsx(Icon, {
-          path: mdiClose,
-          size: 0.7
-        })
-      })]
-    }, item.text);
-  }
-  function hedaer_layout() {
-    return /*#__PURE__*/_jsx("div", {
-      className: "msf jflex-row jalign-v jp-6 jalign-vh",
-      children: /*#__PURE__*/_jsxs("button", {
-        type: "button",
-        className: "jflex-row jalign-v",
-        style: {
-          color: 'orange',
-          background: 'none'
-        },
-        onClick: () => addVariableModal(),
-        children: [/*#__PURE__*/_jsx(Icon, {
-          path: mdiPlusThick,
-          size: 0.7
-        }), "Add Variable"]
       })
-    });
+    }, item.text);
   }
   function body_layout() {
     if (!selectedRule) {
@@ -469,109 +459,387 @@ const Variables = () => {
     }
     return /*#__PURE__*/_jsx("div", {
       className: "jflex-col jgap-3 jp-3 jflex-1 jofy-auto",
-      children: selectedVariables.map((o, i) => item_layout(o, i))
+      children: variables.map((o, i) => item_layout(o, i))
     });
   }
-  return /*#__PURE__*/_jsxs(_Fragment, {
-    children: [hedaer_layout(), " ", body_layout()]
+  return /*#__PURE__*/_jsx(_Fragment, {
+    children: body_layout()
   });
 };
-const RuleCode = () => {
+const DraggableRules = () => {
+  const {
+    rules,
+    Drag
+  } = useContext(CTX);
+  function item_layout(rule, index) {
+    return /*#__PURE__*/_jsxs("div", {
+      className: "jflex-row jp-6 jbrd-c-5 jflex-row jalign-v",
+      ...Drag.getDragAttrs({
+        item: rule,
+        type: 'rule'
+      }),
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "jflex-1",
+        children: `${rule.name} - ${rule.id}`
+      }), rule.active && /*#__PURE__*/_jsx("button", {
+        className: "jfs-12 jbold",
+        style: {
+          color: 'green'
+        },
+        children: "active"
+      })]
+    }, rule.id);
+  }
+  function body_layout() {
+    return /*#__PURE__*/_jsx("div", {
+      className: "jflex-col jgap-3 jp-3 jflex-1 jofy-auto",
+      children: rules.map((o, i) => item_layout(o, i))
+    });
+  }
+  return /*#__PURE__*/_jsx(_Fragment, {
+    children: body_layout()
+  });
+};
+const Rule = () => {
   const {
     selectedRule,
-    templates,
-    trans,
-    submitRuleChange
+    changeRule,
+    generatePreview
   } = useContext(CTX);
-  const [template] = useState(getTemplate);
-  function getTemplate() {
-    return templates.find(o => o.id === (selectedRule === null || selectedRule === void 0 ? void 0 : selectedRule.templateId));
+  const rule = selectedRule;
+  const [tab, setTab] = useState(rule.isSaved !== false ? 'preview' : 'editor');
+  function changeTab(tab) {
+    if (tab === 'preview') {
+      changeRule({
+        finalCode: generatePreview()
+      });
+    }
+    setTab(tab);
   }
-  const [mode, setMode] = useState('editor');
   if (!selectedRule) {
     return null;
   }
-  function template_rows_layout() {
-    const {
-      rows
-    } = template;
-    return rows.map((row, rowIndex) => template_row_layout(row, rowIndex));
+  const options = [{
+    text: 'Editor',
+    value: 'editor',
+    show: !rule.startDate
+  }, {
+    text: 'Preview And Save',
+    value: 'preview'
+  }, {
+    text: 'Activation',
+    value: 'activation'
+  }];
+  return /*#__PURE__*/_jsxs("div", {
+    className: "jflex-col theme2-border-left theme2-border-right jflex-1 jof-hidden",
+    children: [/*#__PURE__*/_jsx(AITabs, {
+      value: tab,
+      onChange: tab => changeTab(tab),
+      options: options
+    }), /*#__PURE__*/_jsxs("div", {
+      className: "jflex-col jflex-1 jp-12 jgap-3 jofy-auto jw-100",
+      children: [tab === 'editor' && /*#__PURE__*/_jsx(RuleEditor, {}), tab === 'preview' && /*#__PURE__*/_jsx(RuleActions, {}), tab === 'activation' && /*#__PURE__*/_jsx(RuleActivation, {})]
+    })]
+  });
+};
+const RuleActivation = () => {
+  const {
+    apis,
+    popup,
+    selectedRule,
+    errors,
+    changeRule,
+    selectRule
+  } = useContext(CTX);
+  const rule = selectedRule;
+  const [startDate, setStartDate] = useState(rule.startDate || '');
+  const [endDate, setEndDate] = useState(rule.endDate || '');
+  const disabled = !!errors.length || typeof rule.startDate === 'string' || !!rule.active;
+  const props = {
+    jalali: true,
+    size: 16,
+    style: {
+      border: '1px solid #565b5f',
+      background: 'none',
+      width: 160
+    },
+    disabled,
+    popover: {
+      position: 'center',
+      setAttrs: key => {
+        if (key === 'backdrop') {
+          return {
+            style: {
+              background: 'rgba(0,0,0,0.5)'
+            }
+          };
+        }
+      }
+    }
+  };
+  function activationModal(value) {
+    if (!!value) {
+      if (!startDate) {
+        popup.addSnackebar({
+          type: 'error',
+          text: 'please inter start date'
+        });
+        return;
+      }
+    }
+    popup.addConfirm({
+      title: `${value ? 'Active' : 'Deactive'} Rule`,
+      text: /*#__PURE__*/_jsxs("ul", {
+        style: {
+          listStyle: 'none'
+        },
+        className: "jp-0",
+        children: [/*#__PURE__*/_jsx("li", {
+          children: `Are you sure want to ${value ? 'Active' : 'Deactive'} ${selectedRule === null || selectedRule === void 0 ? void 0 : selectedRule.name}`
+        }), /*#__PURE__*/_jsx("li", {
+          children: `from date ${selectedRule === null || selectedRule === void 0 ? void 0 : selectedRule.startDate}`
+        }), /*#__PURE__*/_jsx("li", {
+          children: `to date ${selectedRule === null || selectedRule === void 0 ? void 0 : selectedRule.endDate}`
+        })]
+      }),
+      onSubmit: async () => {
+        if (value) {
+          const res = await apis.activeRule(rule, startDate, endDate);
+          if (res) {
+            changeRule({
+              active: value
+            });
+            selectRule(undefined);
+            return true;
+          }
+          return false;
+        } else {
+          const res = await apis.deactiveRule(rule);
+          if (res) {
+            changeRule({
+              active: value
+            });
+            selectRule(undefined);
+            return true;
+          }
+          return false;
+        }
+      }
+    });
   }
-  function template_row_layout(row, rowIndex) {
+  function row_layout(label, input, error) {
+    return /*#__PURE__*/_jsxs(_Fragment, {
+      children: [/*#__PURE__*/_jsxs("div", {
+        className: `jflex-row jalign-v jgap-12 jp-12 jm-b-3 jrelative rule-engine-form-row`,
+        children: [/*#__PURE__*/_jsx("div", {
+          className: "msf",
+          children: label
+        }), /*#__PURE__*/_jsx("div", {
+          className: "jflex-1"
+        }), /*#__PURE__*/_jsx("div", {
+          className: "jw-fit",
+          children: input
+        })]
+      }), !!error && /*#__PURE__*/_jsxs("div", {
+        className: "rule-engine-activation-error",
+        title: error,
+        children: [/*#__PURE__*/_jsx(Icon, {
+          path: mdiInformation,
+          size: 0.6
+        }), error]
+      })]
+    });
+  }
+  return /*#__PURE__*/_jsxs("div", {
+    className: "jw-100 jrelative",
+    children: [row_layout('Start Date', /*#__PURE__*/_jsx(AIDate, {
+      ...props,
+      value: startDate,
+      onChange: startDate => setStartDate(startDate)
+    }), !startDate ? 'Start date is required' : ''), row_layout('End Date', /*#__PURE__*/_jsx(AIDate, {
+      ...props,
+      value: endDate,
+      onChange: endDate => setEndDate(endDate)
+    }), !endDate ? 'End date is required' : ''), row_layout('Activation', /*#__PURE__*/_jsx(AISwitch, {
+      value: !!(selectedRule !== null && selectedRule !== void 0 && selectedRule.active),
+      size: [24, 2, 3, 60],
+      colors: ['#ddd', '#ef5644'],
+      onChange: a => !errors.length ? activationModal(a) : undefined
+    })), !!errors.length && /*#__PURE__*/_jsxs("div", {
+      className: "jfs-10 jflex-row jalign-v jgap-6",
+      style: {
+        color: 'red'
+      },
+      children: [/*#__PURE__*/_jsx(Icon, {
+        path: mdiInformation,
+        size: 0.6
+      }), "You cannot active this rule, because there is ", /*#__PURE__*/_jsx("mark", {
+        children: errors.length
+      }), " syntax errors"]
+    })]
+  });
+};
+const RuleActions = () => {
+  const {
+    selectedRule,
+    generatePreview,
+    apis,
+    addRule,
+    selectRule,
+    editRule
+  } = useContext(CTX);
+  const rule = selectedRule;
+  async function add() {
+    const res = await addRule();
+    if (res) {
+      selectRule(undefined);
+    }
+  }
+  async function edit() {
+    const res = await editRule();
+    if (res) {
+      selectRule(undefined);
+    }
+  }
+  const btnCLS = 'theme2-button-2 jh-48 jw-120  jfs-16';
+  function save_layout() {
+    if (rule.isSaved !== false) {
+      return null;
+    }
+    return /*#__PURE__*/_jsx("button", {
+      className: btnCLS,
+      onClick: () => add(),
+      children: "Save"
+    });
+  }
+  function edit_layout() {
+    if (rule.isSaved === false) {
+      return null;
+    }
+    return /*#__PURE__*/_jsx("button", {
+      className: btnCLS,
+      onClick: () => edit(),
+      children: "Save"
+    });
+  }
+  return /*#__PURE__*/_jsxs("div", {
+    className: "",
+    children: [Code(rule.finalCode || generatePreview()), /*#__PURE__*/_jsx(RuleErrors, {}), save_layout(), edit_layout()]
+  });
+};
+const RuleErrors = () => {
+  const {
+    errors
+  } = useContext(CTX);
+  function beautifyErrors(errors) {
+    if (!errors || !errors.length) {
+      return null;
+    }
+    const formattedErrors = errors.map((msg, index) => {
+      const isLast = index === errors.length - 1;
+      return /*#__PURE__*/_jsxs("li", {
+        className: `jflex-row jc-4 jalign-v${!isLast ? ' jbrd-c-11 jbrd-b' : ''}`,
+        style: {
+          minHeight: 24
+        },
+        children: [/*#__PURE__*/_jsx("div", {
+          className: "jw-24 jflex-row jalign-vh",
+          children: /*#__PURE__*/_jsx(Icon, {
+            path: mdiCloseCircle,
+            size: 0.6,
+            color: "#B95252"
+          })
+        }), /*#__PURE__*/_jsx("div", {
+          className: "jflex-1",
+          children: msg
+        }), /*#__PURE__*/_jsx("span", {
+          className: "jfs-12 jw-24 jalign-h-end jflex-row jm-r-12",
+          style: {
+            display: 'block'
+          },
+          children: index + 1
+        })]
+      }, index);
+    });
+    return /*#__PURE__*/_jsxs("ul", {
+      style: {
+        listStyle: 'none'
+      },
+      className: "jfs-12 jp-0 jc-14",
+      children: [/*#__PURE__*/_jsxs("li", {
+        className: "jflex-row jh-30 jalign-v jbrd-c-11 jbrd-b jm-b-6",
+        children: [/*#__PURE__*/_jsx("div", {
+          className: "jflex-1 jp-l-16 jc-10",
+          children: "Issues"
+        }), /*#__PURE__*/_jsx("div", {
+          className: "jw-36 jflex-row jalign-vh jc-10",
+          children: "#"
+        })]
+      }, 'titr'), formattedErrors]
+    });
+  }
+  return beautifyErrors(errors);
+};
+const RuleEditor = props => {
+  const {
+    selectedTemplate,
+    model,
+    changeModelByField
+  } = useContext(CTX);
+  const template = props.template || selectedTemplate;
+  const {
+    rows
+  } = template;
+  function row_layout(row, rowIndex) {
     const {
       cells = []
     } = row;
     if (!cells.length) {
       return null;
     }
-    return /*#__PURE__*/_jsxs("div", {
-      className: "jflex-row jalign-v",
-      children: [template_cells_layout(cells, rowIndex), options_layout()]
-    });
-  }
-  function options_layout() {
     return /*#__PURE__*/_jsx("div", {
-      className: "jflex-row jalign-vh",
-      children: /*#__PURE__*/_jsx(Icon, {
-        path: mdiDotsVertical,
-        size: 0.8
-      })
+      className: "jflex-row jalign-v",
+      children: cells_layout(cells, rowIndex)
     });
   }
-  function template_cells_layout(cells, rowIndex) {
+  function cells_layout(cells, rowIndex) {
     return /*#__PURE__*/_jsx("div", {
       className: "jflex-row jflex-1 jalign-v jgap-6 jh-100",
-      children: cells.map((cell, cellIndex) => /*#__PURE__*/_jsx(CodeCell, {
-        cell: cell,
-        rowIndex: rowIndex,
-        cellIndex: cellIndex
-      }))
+      children: cells.map((cell, cellIndex) => {
+        return /*#__PURE__*/_jsx(CodeCell, {
+          cell: cell,
+          rowIndex: rowIndex,
+          cellIndex: cellIndex,
+          model: model,
+          onChange: (field, value) => changeModelByField(field, value)
+        });
+      })
     });
   }
-  return /*#__PURE__*/_jsxs("div", {
-    className: "jflex-col jw-100 rule-engine-border-left rule-engine-border-right",
-    children: [/*#__PURE__*/_jsx(AITabs, {
-      value: mode,
-      onChange: mode => setMode(mode),
-      options: [{
-        text: 'Editor',
-        value: 'editor'
-      }, {
-        text: 'Preview',
-        value: 'preview'
-      }],
-      before: /*#__PURE__*/_jsxs("button", {
-        className: "rule-engine-save jalign-v jflex-row jgap-6 jfs-14 jbold",
-        onClick: submitRuleChange,
-        children: [/*#__PURE__*/_jsx(Icon, {
-          path: mdiContentSave,
-          size: 1
-        }), trans('Save')]
-      })
-    }), /*#__PURE__*/_jsx("div", {
-      className: "jflex-col jflex-1 jp-12 jgap-3 jofy-auto jw-100",
-      children: template_rows_layout()
-    })]
+  return /*#__PURE__*/_jsx("div", {
+    className: "rule-editor",
+    children: rows.map((row, rowIndex) => row_layout(row, rowIndex))
   });
 };
 const CodeCell = ({
   cell,
   rowIndex,
-  cellIndex
+  cellIndex,
+  model,
+  onChange
 }) => {
   const {
     Drag,
-    model,
-    changeModelByField
+    getFieldByIndex
   } = useContext(CTX);
   function select_layout(selectfield, options) {
     let value = model[selectfield];
     return /*#__PURE__*/_jsx(AIOInput, {
       type: "select",
-      className: "jw-fit jbg-l-5 jbrd-none",
+      className: "jw-fit jbrd-none",
       options: options,
       value: value,
-      onChange: newValue => changeModelByField(selectfield, newValue),
+      onChange: newValue => onChange(selectfield, newValue),
       option: {
         text: 'option',
         value: 'option'
@@ -584,9 +852,9 @@ const CodeCell = ({
   function text_layout(field) {
     return /*#__PURE__*/_jsx(AIOInput, {
       type: "text",
-      className: "jw-fit jbg-l-5 jbrd-none",
+      className: "jw-fit jbrd-none",
       value: model[field] || '',
-      onChange: newValue => changeModelByField(field, newValue),
+      onChange: newValue => onChange(field, newValue),
       validations: ['required'],
       lang: "en",
       showErrors: false
@@ -601,19 +869,19 @@ const CodeCell = ({
         ...dragAttrs
       },
       type: "textarea",
-      className: "jflex-1 jbg-l-5 jbrd-none",
+      className: "jflex-1 jbrd-none",
       inputAttrs: {
         className: 'resize-v'
       },
       value: model[field] || '',
-      onChange: newValue => changeModelByField(field, newValue),
+      onChange: newValue => onChange(field, newValue),
       autoHighlight: false,
       validations: ['required'],
       lang: "en",
       showErrors: false
     });
   }
-  const field = `field-${rowIndex}-${cellIndex}`;
+  const field = getFieldByIndex(rowIndex, cellIndex);
   if (cell.indexOf('select(') === 0) {
     const optionsString = cell.slice(7, cell.length - 1);
     const options = JSON.parse(optionsString);
@@ -629,7 +897,7 @@ const CodeCell = ({
     return /*#__PURE__*/_jsx(Indent, {});
   }
   return /*#__PURE__*/_jsx("div", {
-    className: "jflex-row",
+    className: "jflex-row jshrink-0",
     children: cell
   });
 };
@@ -640,7 +908,7 @@ const History = () => {
   } = useContext(CTX);
   function header_layout() {
     return /*#__PURE__*/_jsxs("div", {
-      className: "msf jflex-row jalign-v jp-6 jalign-vh jbg-d-20 jfs-14 jgap-6",
+      className: "msf jflex-row jalign-v jp-6 jalign-vh rule-engine-header jfs-14 jgap-6",
       style: {
         color: 'orange'
       },
@@ -650,7 +918,7 @@ const History = () => {
       }), " ", trans('History')]
     });
   }
-  function item_layout(historyItems) {
+  function item_layout(historyItem) {
     return /*#__PURE__*/_jsx("div", {
       className: "jflex-row jp-6 jbrd-c-5 jflex-row jalign-v",
       children: /*#__PURE__*/_jsxs("div", {
@@ -665,11 +933,14 @@ const History = () => {
             size: 0.7
           })
         }), /*#__PURE__*/_jsx("div", {
-          className: "jfs-12",
-          children: historyItems.date
+          className: "jfs-12 jflex-col",
+          children: /*#__PURE__*/_jsx("div", {
+            className: "jfs-12",
+            children: historyItem.startDate
+          })
         })]
       })
-    }, historyItems.date);
+    });
   }
   function items_layout() {
     return /*#__PURE__*/_jsx("div", {
@@ -678,146 +949,316 @@ const History = () => {
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: "jw-204 jflex-col jshrink-0 rule-engine-border-left",
+    className: "jw-204 jflex-col jshrink-0 theme2-border-left",
     children: [header_layout(), " ", items_layout()]
   });
 };
 const Home = () => {
   const {
-    popup,
-    rules,
     templates,
-    selectRule,
-    changeTemplates,
-    removeTemplate,
-    removeRule,
-    addRule
+    addTemplate,
+    editTemplate,
+    removeTemplate
   } = useContext(CTX);
   const [templateToEdit, setTemplateToEdit] = useState();
   const [templateToAdd, setTemplateToAdd] = useState(false);
-  function addRuleModal() {
-    popup.addModal({
-      header: {
-        title: 'AddRule'
-      },
-      position: 'center',
-      body: () => /*#__PURE__*/_jsx(AddRule, {
-        onSubmit: async (name, templateId) => {
-          const res = await addRule(name, templateId);
-          if (res) {
-            popup.removeModal();
-          }
-        }
-      })
-    });
+  function rules_layout() {
+    return /*#__PURE__*/_jsx(HomeRules, {});
   }
-  function part_header_layout(label, onAdd) {
-    return /*#__PURE__*/_jsxs("div", {
-      className: "jfs-24 jm-b-12 jflex-row jalign-between jalign-v jw-100 jp-jh-12 jh-48",
-      style: {
-        color: 'orange',
-        background: 'rgba(255,255,255,0.2)'
-      },
-      children: [/*#__PURE__*/_jsx("div", {
-        className: "msf",
-        children: label
-      }), /*#__PURE__*/_jsx("div", {
+  function templates_layout() {
+    return /*#__PURE__*/_jsx(AIPanel, {
+      before: /*#__PURE__*/_jsx(Icon, {
+        path: mdiFileCode,
+        size: 1
+      }),
+      body: /*#__PURE__*/_jsx("div", {
+        className: "jw-100 jflex-col jp-12 jgap-12",
+        children: templates.map(template => {
+          return /*#__PURE__*/_jsx(AICard, {
+            text: template.name,
+            onClick: () => setTemplateToEdit(template),
+            after: /*#__PURE__*/_jsx("div", {
+              className: "msf",
+              onClick: () => {
+                removeTemplate(template.id);
+              },
+              children: /*#__PURE__*/_jsx(Icon, {
+                path: mdiClose,
+                size: 1
+              })
+            })
+          }, template.id);
+        })
+      }),
+      text: "Templates",
+      subtext: `${templates.length} items`,
+      after: /*#__PURE__*/_jsx("div", {
         className: "jflex-row jalign-vh pointer",
-        onClick: onAdd,
+        onClick: () => setTemplateToAdd(true),
         children: /*#__PURE__*/_jsx(Icon, {
           path: mdiPlusCircleOutline,
           size: 1.4
         })
-      })]
+      })
     });
-  }
-  function part_body_layout(items) {
-    return /*#__PURE__*/_jsx("div", {
-      className: "jflex-1 jofy-auto jflex-col jgap-12 jw-100 jalign-h jp-12",
-      children: items
-    });
-  }
-  function part_layout(label, items, onAdd) {
-    return /*#__PURE__*/_jsxs("div", {
-      className: "jflex-col jalign-h jh-100 jp-12 jbr-12 jw-100",
-      children: [part_header_layout(label, onAdd), " ", part_body_layout(items)]
-    });
-  }
-  function rules_layout() {
-    const items = rules.map(rule => {
-      return part_item_layout({
-        id: rule.id,
-        text: rule.name,
-        subtext: rule.date,
-        onClick: () => selectRule(rule),
-        onRemove: () => removeRule(rule.id)
-      });
-    });
-    return part_layout('Rules', items, () => addRuleModal());
-  }
-  function templates_layout() {
-    const items = templates.map(template => {
-      return part_item_layout({
-        id: template.id,
-        text: template.name,
-        onClick: () => setTemplateToEdit(template),
-        onRemove: () => removeTemplate(template.id)
-      });
-    });
-    return part_layout('Templates', items, () => setTemplateToAdd(true));
-  }
-  function part_item_layout(p) {
-    const {
-      id,
-      text,
-      subtext,
-      onClick,
-      onRemove
-    } = p;
-    return /*#__PURE__*/_jsxs("div", {
-      className: "part-button",
-      children: [/*#__PURE__*/_jsxs("div", {
-        className: "part-button-body",
-        onClick: onClick,
-        children: [/*#__PURE__*/_jsx("div", {
-          className: "",
-          children: text
-        }), subtext !== undefined && /*#__PURE__*/_jsx("div", {
-          className: "jop-60 jfs-p70",
-          children: subtext
-        })]
-      }), /*#__PURE__*/_jsx("div", {
-        className: "part-button-remove",
-        onClick: () => onRemove(),
-        children: /*#__PURE__*/_jsx(Icon, {
-          path: mdiClose,
-          size: 0.7
-        })
-      })]
-    }, id);
   }
   if (templateToAdd) {
     return /*#__PURE__*/_jsx(Template, {
+      onClose: () => setTemplateToAdd(false),
       mode: "add",
-      onSubmit: newTemplate => {
-        changeTemplates([...templates, newTemplate]);
-        setTemplateToAdd(false);
+      onSubmit: async newTemplate => {
+        const res = await addTemplate(newTemplate);
+        if (res) {
+          setTemplateToAdd(false);
+        }
       }
     });
   }
   if (templateToEdit) {
     return /*#__PURE__*/_jsx(Template, {
+      onClose: () => setTemplateToEdit(undefined),
       mode: "edit",
       template: templateToEdit,
-      onSubmit: newTemplate => {
-        changeTemplates(templates.map(o => o.id === templateToEdit.id ? newTemplate : o));
-        setTemplateToEdit(undefined);
+      onSubmit: async newTemplate => {
+        const res = await editTemplate(newTemplate);
+        if (res) {
+          setTemplateToEdit(undefined);
+        }
       }
     });
   }
   return /*#__PURE__*/_jsxs("div", {
-    className: "jflex-row jalign-h jflex-1 jp-12",
+    className: "jflex-row jalign-h jflex-1 jp-12 jofy-auto jgap-12",
     children: [rules_layout(), " ", templates_layout()]
+  });
+};
+const HomeRules = () => {
+  const {
+    popup,
+    rules,
+    templates,
+    selectRule,
+    removeRule
+  } = useContext(CTX);
+  const [cat, setCat] = useState('All Rules');
+  function getCats() {
+    let cats = {
+      'All Rules': [...rules]
+    };
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i];
+      const {
+        categoryName
+      } = rule;
+      cats[categoryName] = cats[categoryName] || [];
+      cats[categoryName].push(rule);
+    }
+    return cats;
+  }
+  function getBody() {
+    const rules = cats[cat];
+    return /*#__PURE__*/_jsx("div", {
+      className: "jflex-col jgap-12",
+      children: rules.map(rule => getEntityButton(rule))
+    });
+  }
+  function getEntityButton(rule) {
+    const template = templates.find(o => o.id === rule.templateId);
+    let subtextList = [rule.categoryName, `template:${template === null || template === void 0 ? void 0 : template.name}`, `id:${rule.id}`, typeof rule.startDate === 'string' ? `${rule.startDate}` : 'date not set'];
+    const subtext = /*#__PURE__*/_jsxs("div", {
+      className: "jflex-row jgap-3 jp-v-6",
+      children: [subtextList.map((o, index) => {
+        return /*#__PURE__*/_jsx("div", {
+          className: "jp-h-6 jbr-6 rule-engine-card-tag",
+          children: o
+        }, index);
+      }), /*#__PURE__*/_jsx("div", {
+        className: "jflex-1"
+      }), rule.active && /*#__PURE__*/_jsx("div", {
+        className: "jfs-12 jbold jp-h-6 jbr-4",
+        style: {
+          background: 'green'
+        },
+        children: "Active"
+      })]
+    });
+    return /*#__PURE__*/_jsx(AICard, {
+      text: /*#__PURE__*/_jsxs("div", {
+        className: "jflex-row jalign-v jgap-6 theme2-bg1",
+        children: [/*#__PURE__*/_jsx(Icon, {
+          path: mdiFileCode,
+          size: 0.8
+        }), rule.name]
+      }),
+      subtext: subtext,
+      onClick: () => selectRule(rule),
+      after: /*#__PURE__*/_jsx("div", {
+        className: "msf",
+        onClick: () => removeRule(rule.id),
+        children: /*#__PURE__*/_jsx(Icon, {
+          path: mdiClose,
+          size: 1
+        })
+      })
+    }, rule.id);
+  }
+  function addModal() {
+    popup.addModal({
+      header: {
+        title: 'AddRule'
+      },
+      position: 'center',
+      setAttrs: key => {
+        if (key === 'backdrop') {
+          return {
+            className: 'jbf-4'
+          };
+        }
+      },
+      body: () => {
+        return /*#__PURE__*/_jsx(AddRule, {
+          categoryNames: Object.keys(cats),
+          onSubmit: async (name, templateId, categoryName) => {
+            const newRule = {
+              categoryName,
+              finalCode: '',
+              templateId,
+              name,
+              model: {},
+              active: false,
+              id: 0,
+              isSaved: false
+            };
+            selectRule(newRule);
+            popup.removeModal();
+          }
+        });
+      }
+    });
+  }
+  function categoryButtons_layout() {
+    return /*#__PURE__*/_jsx("div", {
+      className: "",
+      children: /*#__PURE__*/_jsx(AIButtons, {
+        options: Object.keys(cats),
+        value: cat,
+        option: {
+          text: 'option',
+          value: 'option'
+        },
+        onChange: cat => setCat(cat)
+      })
+    });
+  }
+  const cats = getCats();
+  return /*#__PURE__*/_jsx(AIPanel, {
+    text: "Rules",
+    subtext: `${rules.length} items`,
+    after: /*#__PURE__*/_jsx("div", {
+      className: "jflex-row jalign-vh pointer",
+      onClick: () => addModal(),
+      children: /*#__PURE__*/_jsx(Icon, {
+        path: mdiPlusCircleOutline,
+        size: 1.4
+      })
+    }),
+    before: /*#__PURE__*/_jsx(Icon, {
+      path: mdiFileCode,
+      size: 1
+    }),
+    body: /*#__PURE__*/_jsxs("div", {
+      className: "jflex-col jw-100",
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "jp-h-12",
+        children: categoryButtons_layout()
+      }), /*#__PURE__*/_jsx("div", {
+        className: "jflex-1 jp-12",
+        children: getBody()
+      })]
+    })
+  });
+};
+const AddRule = ({
+  categoryNames,
+  onSubmit
+}) => {
+  const {
+    templates
+  } = useContext(CTX);
+  const [name, setName] = useState('');
+  const [templateId, setTemplateId] = useState();
+  const [categoryName, setCategoryName] = useState('');
+  const [errors, setErrors] = useState({});
+  const disabled = !!Object.keys(errors).filter(o => !!errors[o].length).length;
+  return /*#__PURE__*/_jsxs("div", {
+    className: "add-rule",
+    children: [/*#__PURE__*/_jsx("div", {
+      className: "add-rule-label",
+      children: "Rule Name"
+    }), /*#__PURE__*/_jsx(AIText, {
+      value: name,
+      onChange: v => setName(v),
+      validations: ['required'],
+      lang: "en",
+      reportError: error => setErrors({
+        ...errors,
+        name: error
+      }),
+      placeholder: "Inter rule name",
+      showErrors: false
+    }), /*#__PURE__*/_jsx("div", {
+      className: "add-rule-label",
+      children: "Rule Template"
+    }), /*#__PURE__*/_jsx(AISelect, {
+      options: templates,
+      validations: ['required'],
+      value: templateId,
+      placeholder: "Select Template",
+      subtext: templateId !== undefined ? templateId : undefined,
+      option: {
+        text: 'option.name',
+        value: 'option.id',
+        subtext: option => option.id
+      },
+      popover: {
+        fitHorizontal: true
+      },
+      onChange: templateId => setTemplateId(templateId),
+      reportError: error => setErrors({
+        ...errors,
+        template: error
+      }),
+      showErrors: false
+    }), /*#__PURE__*/_jsx("div", {
+      className: "add-rule-label",
+      children: "Rule Category"
+    }), /*#__PURE__*/_jsx(AIText, {
+      options: categoryNames,
+      validations: ['required'],
+      value: categoryName,
+      option: {
+        text: 'option',
+        value: 'option'
+      },
+      popover: {
+        fitHorizontal: true
+      },
+      onChange: categoryName => setCategoryName(categoryName),
+      reportError: error => setErrors({
+        ...errors,
+        categoryName: error
+      }),
+      placeholder: "Inter rule category",
+      showErrors: false
+    }), /*#__PURE__*/_jsx("div", {
+      className: "msf"
+    }), /*#__PURE__*/_jsx("button", {
+      type: "button",
+      className: "theme2-button-2",
+      disabled: disabled,
+      onClick: () => onSubmit(name, templateId, categoryName),
+      children: "Add Rule"
+    })]
   });
 };
 const TemplateContext = /*#__PURE__*/createContext({});
@@ -828,15 +1269,34 @@ const Template = props => {
   const {
     mode
   } = props;
-  const [template, setTemplate] = useState(getTemplate);
+  const [template, SetTemplate] = useState(getTemplate);
+  function setTemplate(newTemplate) {
+    SetTemplate(newTemplate);
+    if (props.mode === 'add') {
+      localStorage.setItem('boxitruleEngineAddTemplateRemember', JSON.stringify(newTemplate.rows));
+    }
+  }
   function getTemplate() {
     if (mode === 'edit') {
       return JSON.parse(JSON.stringify(props.template));
     }
+    let storedRows = localStorage.getItem('boxitruleEngineAddTemplateRemember');
+    if (storedRows === null) {
+      storedRows = undefined;
+    }
+    let rows = [];
+    if (storedRows) {
+      try {
+        rows = JSON.parse(storedRows);
+      } catch {}
+      if (!Array.isArray(rows)) {
+        rows = [];
+      }
+    }
     return {
       id: GetRandomNumber(100000, 900000),
       name: '',
-      rows: []
+      rows
     };
   }
   function header_layout() {
@@ -849,28 +1309,70 @@ const Template = props => {
       title = 'Add Template';
       submitText = 'Add';
     }
+    const disabled = !template || !template.name || !template.rows || !template.rows.length;
     return /*#__PURE__*/_jsxs("div", {
-      className: "jbg-d-20 jp-jh-24 jfs-14 jbold jflex-row jh-36 jalign-v",
+      className: "theme2-bg-dark1 jp-h-24 jfs-14 jbold jflex-row jh-36 jalign-v jgap-6",
       children: [title, /*#__PURE__*/_jsx("div", {
         className: "jflex-1"
       }), /*#__PURE__*/_jsx("button", {
+        onClick: () => props.onClose(),
+        className: "theme2-button-3",
+        children: "Close"
+      }), /*#__PURE__*/_jsx("button", {
+        disabled: disabled,
         onClick: () => props.onSubmit(template),
-        style: {
-          background: 'orange',
-          border: 'none'
-        },
-        className: "jbr-4 jh-30 jw-72",
+        className: "theme2-button-2",
         children: submitText
       })]
     });
   }
-  function body_layout() {
-    return /*#__PURE__*/_jsx("div", {
-      className: "jflex-col jp-24",
-      children: template.rows.map((o, rowIndex) => /*#__PURE__*/_jsx(TemplateRow, {
-        row: o,
-        rowIndex: rowIndex
-      }, rowIndex))
+  function addFirstCell(type, rows) {
+    let newRows = [];
+    if (type === 'import') {
+      newRows = [...(rows || [])];
+    } else {
+      newRows = [{
+        cells: [getNewCellByType(type)]
+      }];
+    }
+    setTemplate({
+      ...template,
+      rows: [...newRows]
+    });
+  }
+  function editor_layout() {
+    return /*#__PURE__*/_jsxs("div", {
+      className: "jflex-1 jp-12 jh-100 jbg-d-10",
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "jfs-16 jflex-row jalign-vh theme2-bg-dark1 jh-36",
+        children: "Editor"
+      }), /*#__PURE__*/_jsx("div", {
+        className: "jflex-1 jofy-auto",
+        children: /*#__PURE__*/_jsxs("div", {
+          className: "jflex-col jp-24 jflex-1",
+          children: [/*#__PURE__*/_jsx(AddTemplateCellButton, {
+            onAdd: (v, rows) => addFirstCell(v, rows),
+            isEmptyRow: true
+          }), template.rows.map((o, rowIndex) => /*#__PURE__*/_jsx(TemplateRow, {
+            row: o,
+            rowIndex: rowIndex
+          }, rowIndex))]
+        })
+      })]
+    });
+  }
+  function preview_layout() {
+    return /*#__PURE__*/_jsxs("div", {
+      className: "jflex-1 jp-12 jh-100 jflex-col jbg-d-10",
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "jfs-16 jflex-row jalign-vh theme2-bg-dark1 jh-36",
+        children: "Preview"
+      }), /*#__PURE__*/_jsx("div", {
+        className: "jflex-1 jofy-auto jp-24 jgap-16 jflex-col",
+        children: /*#__PURE__*/_jsx(RuleEditor, {
+          template: template
+        })
+      })]
     });
   }
   function changeCell(value, rowIndex, cellIndex) {
@@ -886,8 +1388,7 @@ const Template = props => {
       rows: newRows
     });
   }
-  function addCell(type, rowIndex, isEmptyRow) {
-    let newRows = [];
+  function getNewCellByType(type) {
     let newCell = '';
     if (type === 'static_text') {
       newCell = 'text';
@@ -900,24 +1401,58 @@ const Template = props => {
     } else {
       newCell = 'select([])';
     }
-    if (isEmptyRow) {
+    return newCell;
+  }
+  function addCell(type, rowIndex, isEmptyRow, rows) {
+    let newRows = [];
+    if (type === 'import') {
       let tempRows = [];
       for (let i = 0; i < template.rows.length; i++) {
         if (i === rowIndex) {
-          tempRows.push(template.rows[i], {
-            cells: [newCell]
-          });
+          tempRows.push(template.rows[i]);
+          tempRows = [...tempRows, ...(rows || [])];
         } else {
           tempRows.push(template.rows[i]);
         }
       }
       newRows = tempRows;
     } else {
-      newRows = template.rows.map((row, i) => i !== rowIndex ? row : {
-        ...row,
-        cells: [...row.cells, newCell]
-      });
+      const newCell = getNewCellByType(type);
+      if (isEmptyRow) {
+        let tempRows = [];
+        for (let i = 0; i < template.rows.length; i++) {
+          if (i === rowIndex) {
+            tempRows.push(template.rows[i], {
+              cells: [newCell]
+            });
+          } else {
+            tempRows.push(template.rows[i]);
+          }
+        }
+        newRows = tempRows;
+      } else {
+        newRows = template.rows.map((row, i) => i !== rowIndex ? row : {
+          ...row,
+          cells: [...row.cells, newCell]
+        });
+      }
     }
+    setTemplate({
+      ...template,
+      rows: newRows
+    });
+  }
+  function importRows(rowIndex, newRows) {
+    let tempRows = [];
+    for (let i = 0; i < template.rows.length; i++) {
+      if (i === rowIndex) {
+        tempRows.push(template.rows[i]);
+        tempRows = [...tempRows, ...newRows];
+      } else {
+        tempRows.push(template.rows[i]);
+      }
+    }
+    newRows = tempRows;
     setTemplate({
       ...template,
       rows: newRows
@@ -945,15 +1480,131 @@ const Template = props => {
       popup,
       removeCell,
       addCell,
-      changeCell
+      changeCell,
+      importRows
     };
   }
   return /*#__PURE__*/_jsx(TemplateContext.Provider, {
     value: getContext(),
     children: /*#__PURE__*/_jsxs("div", {
-      className: "jh-100 jw-100 jofy-auto",
-      children: [header_layout(), " ", body_layout()]
+      className: "jh-100 jw-100 jofy-auto jflex-1 jflex-col jgap-12 jp-12",
+      children: [header_layout(), /*#__PURE__*/_jsxs("div", {
+        className: "jflex-col jbr-12",
+        children: [/*#__PURE__*/_jsx("div", {
+          className: "jm-b-6",
+          children: "Template Name : "
+        }), /*#__PURE__*/_jsx("div", {
+          className: "jflex-1",
+          children: /*#__PURE__*/_jsx(AIText, {
+            value: template.name,
+            onChange: name => setTemplate({
+              ...template,
+              name
+            }),
+            className: "jbrd-d-5"
+          })
+        })]
+      }), /*#__PURE__*/_jsxs("div", {
+        className: "jflex-col jflex-1 jbr-12",
+        children: [/*#__PURE__*/_jsx("div", {
+          className: "jm-b-6",
+          children: "Template Body : "
+        }), /*#__PURE__*/_jsxs("div", {
+          className: "jflex-row jflex-1",
+          children: [editor_layout(), preview_layout()]
+        })]
+      })]
     })
+  });
+};
+const AddTemplateCellButton = ({
+  onAdd,
+  isEmptyRow
+}) => {
+  const {
+    popup,
+    templates
+  } = useContext(CTX);
+  const options = [{
+    text: 'Static Text',
+    value: 'static_text'
+  }, {
+    text: 'Select',
+    value: 'select'
+  }, {
+    text: 'Textbox',
+    value: 'textbox'
+  }, {
+    text: 'Code Block',
+    value: 'code_block'
+  }, {
+    text: 'Indent',
+    value: 'indent'
+  }, {
+    text: 'Import Template',
+    value: 'import',
+    show: !!isEmptyRow
+  }];
+  function importModal() {
+    popup.addModal({
+      position: 'center',
+      header: {
+        title: 'Import Template'
+      },
+      body: () => {
+        if (!templates.length) {
+          return /*#__PURE__*/_jsxs("div", {
+            className: "jflex-row jalign-v jgap-6 jp-12",
+            style: {
+              color: 'orange'
+            },
+            children: [/*#__PURE__*/_jsx(Icon, {
+              path: mdiAlert,
+              size: 0.8
+            }), "There is not any templates to import"]
+          });
+        }
+        return /*#__PURE__*/_jsx("div", {
+          className: "jflex-col",
+          children: templates.map(o => {
+            return /*#__PURE__*/_jsx("div", {
+              className: "jp-12",
+              onClick: () => {
+                onAdd('import', o.rows);
+                popup.removeModal();
+              },
+              children: o.name
+            });
+          })
+        });
+      }
+    });
+  }
+  return /*#__PURE__*/_jsx(AISelect, {
+    className: "jw-24 jh-24 jp-0 jm-l-6 jbrd-none jp-0",
+    caret: false,
+    style: {
+      color: 'lightgreen',
+      background: 'none'
+    },
+    text: /*#__PURE__*/_jsx(Icon, {
+      path: mdiPlusThick,
+      size: 0.7
+    }),
+    option: {
+      before: () => /*#__PURE__*/_jsx(Icon, {
+        path: mdiPlusThick,
+        size: 0.7
+      })
+    },
+    options: options,
+    onChange: v => {
+      if (v === 'import') {
+        importModal();
+      } else {
+        onAdd(v);
+      }
+    }
   });
 };
 const TemplateRow = ({
@@ -979,40 +1630,9 @@ const TemplateRow = ({
           path: mdiDelete,
           size: 0.7
         })
-      }), /*#__PURE__*/_jsx(AISelect, {
-        className: "jw-24 jh-24 jp-0 jm-l-6 jbrd-none jp-0",
-        caret: false,
-        style: {
-          color: 'lightgreen',
-          background: 'none'
-        },
-        text: /*#__PURE__*/_jsx(Icon, {
-          path: mdiPlusThick,
-          size: 0.7
-        }),
-        option: {
-          before: () => /*#__PURE__*/_jsx(Icon, {
-            path: mdiPlusThick,
-            size: 0.7
-          })
-        },
-        options: [{
-          text: 'Static Text',
-          value: 'static_text'
-        }, {
-          text: 'Select',
-          value: 'select'
-        }, {
-          text: 'Textbox',
-          value: 'textbox'
-        }, {
-          text: 'Code Block',
-          value: 'code_block'
-        }, {
-          text: 'Indent',
-          value: 'indent'
-        }],
-        onChange: v => addCell(v, rowIndex, isEmptyRow)
+      }), /*#__PURE__*/_jsx(AddTemplateCellButton, {
+        onAdd: (v, rows) => addCell(v, rowIndex, isEmptyRow, rows),
+        isEmptyRow: isEmptyRow
       })]
     }, `addRojw-${rowIndex}-${isEmptyRow}`);
   }
@@ -1043,7 +1663,7 @@ const TemplateCell = ({
         title: 'Edit Options'
       },
       body: () => {
-        return /*#__PURE__*/_jsx(CellOptions, {
+        return /*#__PURE__*/_jsx(SelectCellOptions, {
           options: options,
           onChange: newOptions => {
             const options = newOptions.map(o => o.text);
@@ -1067,19 +1687,13 @@ const TemplateCell = ({
     }
     if (cell.indexOf('text(') === 0) {
       return /*#__PURE__*/_jsx("div", {
-        className: "jp-jh-6 jbr-4",
-        style: {
-          background: '#0069ff'
-        },
+        className: "jp-h-6 jbr-4 theme2-bg-color1",
         children: "TextBox"
       });
     }
     if (cell.indexOf('textarea(') === 0) {
       return /*#__PURE__*/_jsx("div", {
-        className: "jp-jh-6 jbr-4",
-        style: {
-          background: '#0069ff'
-        },
+        className: "jp-h-6 jbr-4 theme2-bg-color1",
         children: "Code Block"
       });
     }
@@ -1091,10 +1705,7 @@ const TemplateCell = ({
   function select_layout(cell, rowIndex, cellIndex) {
     const options = JSON.parse(cell.slice(7, cell.length - 1));
     return /*#__PURE__*/_jsxs("div", {
-      className: "jp-jh-6 jbr-4 jrelative jpointer jflex-row jalign-v",
-      style: {
-        background: '#0069ff'
-      },
+      className: "jp-h-6 jbr-4 jrelative jpointer jflex-row jalign-v theme2-bg-color1",
       onClick: () => openOptionsModal(options, rowIndex, cellIndex),
       children: ["Select", /*#__PURE__*/_jsx("div", {
         className: "jfs-p70 jop-70 jm-l-6",
@@ -1117,14 +1728,14 @@ const TemplateCell = ({
     });
   }
   function static_text_layout(cell, rowIndex, cellIndex) {
-    const width = cell.length * 6.2 + 12;
+    const width = cell.length * 5.4 + 16;
     return /*#__PURE__*/_jsx(AIText, {
       value: cell,
       style: {
         width
       },
       autoHighlight: false,
-      className: "jbg-0 jp-jh-0 jbr-4 jm-l-6 jbrd-none jh-24",
+      className: "jp-h-0 jbr-4 jm-l-6 jbrd-none jh-24",
       onChange: newValue => changeCell(newValue, rowIndex, cellIndex)
     });
   }
@@ -1136,10 +1747,10 @@ const TemplateCell = ({
 const Indent = () => /*#__PURE__*/_jsx("div", {
   className: "jw-12 jh-100 jshrink-0 jflex-row jalign-v jshrink-0",
   children: /*#__PURE__*/_jsx("div", {
-    className: "jw-1 jh-100 jbg-l-20"
+    className: "jw-1 jh-100 rule-engine-code-editor-indent"
   })
 });
-const CellOptions = props => {
+const SelectCellOptions = props => {
   const [options, setOptions] = useState(JSON.parse(JSON.stringify(props.options)).map(text => ({
     text
   })));
@@ -1167,7 +1778,7 @@ const CellOptions = props => {
         text: ''
       }]),
       addText: /*#__PURE__*/_jsxs("div", {
-        className: "jflex-row jalign-v jp-jh-12 jh-24 jbr-4 jm-jh-6 jbold jm-3",
+        className: "jflex-row jalign-v jp-h-12 jh-24 jbr-4 jm-jh-6 jbold jm-3",
         style: {
           color: 'orange'
         },
@@ -1182,7 +1793,7 @@ const CellOptions = props => {
       className: "jh-36 jflex-row jalign-v jp-v-6",
       children: /*#__PURE__*/_jsxs("button", {
         type: "button",
-        className: "jbrd-none jbr-4 jp-v-3 jp-jh-12 jbold jfs-14 jc-4 jflex-row jalign-v jgap-6",
+        className: "jbrd-none jbr-4 jp-v-3 jp-h-12 jbold jfs-14 jc-4 jflex-row jalign-v jgap-6",
         style: {
           background: 'orange'
         },
@@ -1195,3 +1806,229 @@ const CellOptions = props => {
     })]
   });
 };
+class apisClass {
+  constructor(token, baseUrl) {
+    _defineProperty(this, "request", void 0);
+    _defineProperty(this, "baseUrl", 'http://boxi:40000/core-api/v1/');
+    _defineProperty(this, "get_templates", async () => {
+      //return this.mock_get_templates()
+      return await this.request({
+        description: 'دریافت لیست تمپلیت های رول انجین',
+        method: 'get',
+        url: `${this.baseUrl}rule-template/all`,
+        errorResult: [],
+        getResult: response => response.data.payload.map(o => ({
+          id: o.id,
+          name: o.name,
+          rows: JSON.parse(o.ruleRows || '[]')
+        }))
+      });
+    });
+    _defineProperty(this, "add_template", async newTemplate => {
+      return await this.request({
+        description: 'افزودن تمپلیت رول انجین',
+        method: 'post',
+        url: `${this.baseUrl}rule-template/save`,
+        body: {
+          id: newTemplate.id,
+          name: newTemplate.name,
+          ruleRows: JSON.stringify(newTemplate.rows)
+        },
+        errorResult: false,
+        getResult: response => response.data.payload.id
+      });
+    });
+    _defineProperty(this, "edit_template", async newTemplate => {
+      return await this.request({
+        description: 'ویرایش تمپلیت رول انجین',
+        method: 'post',
+        url: `${this.baseUrl}rule-template/save`,
+        body: {
+          id: newTemplate.id,
+          name: newTemplate.name,
+          ruleRows: JSON.stringify(newTemplate.rows)
+        },
+        errorResult: false,
+        getResult: () => true
+      });
+    });
+    _defineProperty(this, "remove_template", async templateId => {
+      return await this.request({
+        description: 'حذف تمپلیت رول انجین',
+        method: 'delete',
+        url: `${this.baseUrl}rule-template/${templateId}`,
+        errorResult: false,
+        getResult: () => true
+      });
+    });
+    _defineProperty(this, "get_rules", async () => {
+      return await this.request({
+        description: 'دریافت لیست رول های رول انجین',
+        method: 'post',
+        url: `${this.baseUrl}rules/filter`,
+        errorResult: [],
+        body: {},
+        getResult: response => {
+          return response.data.payload.map(o => {
+            return {
+              id: o.id,
+              name: o.name,
+              categoryName: o.code,
+              finalCode: o.content,
+              startDate: o.activatedDate,
+              endDate: o.finalDate,
+              templateId: o.templateId,
+              model: JSON.parse(o.model),
+              active: o.isActive
+            };
+          });
+        }
+      });
+    });
+    _defineProperty(this, "add_rule", async newRule => {
+      const body = {
+        name: newRule.name,
+        code: newRule.categoryName,
+        content: newRule.finalCode,
+        templateId: newRule.templateId,
+        model: newRule.model
+      };
+      return await this.request({
+        description: 'افزودن رول به رول انجین',
+        method: 'post',
+        url: `${this.baseUrl}rules/save`,
+        body,
+        errorResult: false,
+        getResult: response => response.data.payload.id
+      });
+    });
+    _defineProperty(this, "edit_rule", async newRule => {
+      return await this.request({
+        description: 'ویرایش رول در رول انجین',
+        method: 'post',
+        url: `${this.baseUrl}rules/update/${newRule.id}`,
+        body: {
+          name: newRule.name,
+          code: newRule.categoryName,
+          content: newRule.finalCode,
+          templateId: newRule.templateId,
+          model: newRule.model
+        },
+        errorResult: false,
+        getResult: response => {
+          return response.status === 200;
+        }
+      });
+    });
+    _defineProperty(this, "remove_rule", async ruleId => {
+      return await this.request({
+        description: 'حذف رول رول انجین',
+        method: 'delete',
+        url: `${this.baseUrl}rules/${ruleId}`,
+        errorResult: false,
+        getResult: response => response.data.status === 'OK'
+      });
+    });
+    _defineProperty(this, "history", async () => {
+      return [];
+    });
+    _defineProperty(this, "activeRule", async (rule, startDate, endDate) => {
+      const [ay, am, ad] = new AIODate().convertToArray(startDate);
+      let body = {
+        activateDate: {
+          day: ad,
+          month: am,
+          year: ay
+        }
+      };
+      if (endDate) {
+        const [fy, fm, fd] = new AIODate().convertToArray(endDate);
+        body.finalDate = {
+          day: fd,
+          month: fm,
+          year: fy
+        };
+      }
+      return await this.request({
+        description: 'فعالسازی رول',
+        method: 'post',
+        url: `${this.baseUrl}rules/activeRule/${rule.id}`,
+        errorResult: false,
+        body,
+        getResult: response => {
+          debugger;
+          return response.data.status === 'OK';
+        }
+      });
+      return true;
+    });
+    _defineProperty(this, "deactiveRule", async rule => {
+      return true;
+    });
+    _defineProperty(this, "validate", async code => {
+      return await this.request({
+        description: 'اعتبار سنجی رول',
+        method: 'post',
+        url: `${this.baseUrl}rules/checkSyntax`,
+        errorResult: [],
+        body: {
+          in: code
+        },
+        getResult: response => {
+          if (response.data.status === 'OK') {
+            const list = response.data.payload || [];
+            return response.data.payload.map(o => o.message);
+          }
+        }
+      });
+    });
+    _defineProperty(this, "mock_get_templates", async () => {
+      return [{
+        "id": 1,
+        "name": "temp1",
+        "rows": [{
+          "cells": ["import com.boxi.ruleEngine.dto.RuleFact;"]
+        }, {
+          "cells": ["rule \"", "text()", "\""]
+        }, {
+          "cells": ["indent", "no-loop", "select([\"false\",\"true\"])"]
+        }, {
+          "cells": ["indent", "lock-on-active", "select([\"false\",\"true\"])"]
+        }, {
+          "cells": ["indent", "when"]
+        }, {
+          "cells": ["indent", "indent", "ruleFact : RuleFact("]
+        }, {
+          "cells": ["indent", "indent", "indent", "textarea()"]
+        }, {
+          "cells": ["indent", "indent", ")"]
+        }, {
+          "cells": ["indent", "then"]
+        }, {
+          "cells": ["indent", "indent", "textarea()"]
+        }, {
+          "cells": ["end;"]
+        }]
+      }];
+    });
+    _defineProperty(this, "mock_get_rules", async () => {
+      return [{
+        "id": 62,
+        "name": "myrule1",
+        "categoryName": "topin",
+        "finalCode": "-",
+        "templateId": 1,
+        "model": "{}",
+        "startDate": undefined,
+        "active": false,
+        isSaved: true
+      }];
+    });
+    this.request = new AIOApis({
+      id: 'boxitruleengine',
+      token,
+      lang: 'fa'
+    }).request;
+    this.baseUrl = baseUrl;
+  }
+}

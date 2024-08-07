@@ -1,0 +1,203 @@
+:root{
+    --theme2-color1: #ef5644;
+    --theme2-color2:#fff;
+    --theme2-dark1:#fff;
+    --theme2-dark2:#eee;
+    --theme2-dark3:#333;
+    --theme2-light1:#ddd;
+}
+.theme2-bg-color1{
+    background: var(--theme2-color1);
+}
+.theme2{
+    color:#333;
+    background:var(--theme2-color2);
+}
+.theme2 nav{
+    height:48px;
+    display:flex;
+    align-items: center;
+    padding:0 19px;
+    flex-shrink:0;
+    background:rgba(0,0,0,0.9);
+}
+.theme2-bg-dark1{
+    background: var(--theme2-dark1);
+}
+.theme2 .aio-input-tabs{
+    background:none;
+    color:#333;
+
+}
+.theme2 .aio-input-tabs-option.active{
+    color:var(--theme2-color1);
+}
+.theme2 .aio-popup-body{
+    background:var(--theme2-dark2)
+}
+.theme2 .aio-popup-backdrop{
+    background:rgba(0,0,0,0.2)
+}
+.theme2 .aio-popup-header{
+    background:#111;
+    color:#333;
+    border-bottom:1px solid rgba(0,0,0,0.8)
+}
+.theme2 .aio-popup-body{
+    border-top:1px solid rgba(255,255,255,0.07);
+    border-bottom:1px solid rgba(0,0,0,0.8);
+}
+.theme2 .aio-popup-footer{
+    background:#111;
+    border-top:1px solid rgba(255,255,255,0.07)
+}
+.theme2 .aio-popup-prompt textarea{
+    background:#000;
+    
+}
+.theme2 .aio-popup-footer button{
+    color:var(--theme2-color1);
+    background: none;
+    padding:3px 24px;
+    border-radius:4px;
+    border:none;
+    border:1px solid var(--theme2-color1);
+    font-weight: bold;
+}
+.theme2 .aio-popup-footer button.active{
+    background:var(--theme2-color1);
+    color:var(--theme2-color2); 
+}
+.theme2-border-left{
+    border-left:0px solid rgba(255,255,255,0.07);
+}
+.theme2-border-right{
+    border-right:1px solid rgba(0,0,0,0.2);
+}
+.theme2-border-top{
+    border-top:0px solid rgba(255,255,255,0.07);
+}
+.theme2-border-bottom{
+    border-bottom:1px solid rgba(0,0,0,0.2);
+}
+.theme2 .aio-input-table{
+    background:var(--theme2-color2);
+    border:none;
+    border-radius:8px;
+    overflow:hidden
+}
+.theme2 .aio-input-table-header{
+    background:rgba(255,255,255,0.1) !important;
+    color:#333;
+    border-bottom:none;
+}
+.theme2 .aio-input-table-row{
+    background:rgba(0,0,0,0.3) !important;
+}
+.theme2 .aio-input-table-toolbar{
+    background:rgba(0,0,0,0.3) !important;
+}
+.theme2 .aio-input-table-cell .aio-input{
+    background:none
+}
+
+.theme2 button:disabled{
+    cursor:not-allowed;
+    opacity:0.5;
+
+}
+.theme2 .aio-input-buttons{
+    background:none;
+}
+.theme2 .aio-input-buttons-option{
+    border:none;
+}
+.theme2 .aio-input-buttons-option.active{
+    background:var(--theme2-color1);
+}
+.theme2-button-1{
+    display:flex;
+    align-items: center;
+    justify-content: center;
+    color:var(--theme2-color1);
+    background:none;
+    height:30px;
+    border:none;
+    gap:6px;
+    font-weight: bold;
+}
+.theme2-button-2{
+    background:var(--theme2-color1);
+    border:none;
+    border-radius:4px;
+    height:30px;
+    font-weight: bold;
+    min-width:60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap:6px;
+    color:var(--theme2-color2);
+    padding:0 12px;
+}
+.theme2-button-3{
+    color: var(--theme2-color1);
+    border: 1px solid;
+    border-radius:4px;
+    height:30px;
+    background:none;
+    font-weight: bold;
+    min-width:60px;
+}
+.theme2 .aio-input-dropdown-option{
+    height:36px !important;
+    border-bottom:1px solid rgba(255,255,255,0.1)
+}
+
+.theme2 .aio-input-theme-bg0{
+    background:var(--theme2-dark1);
+}
+.theme2 .aio-input-theme-bg1{
+    background:var(--theme2-color2);
+}
+.theme2 .aio-input-theme-color0{
+    color:var(--theme2-light1);
+}
+.theme2 .aio-input-theme-color1{
+    color:var(--theme2-color1);
+}
+.theme2 .aio-input-table{
+    color:var(--theme2-light1);
+}
+.theme2 .aio-input-table-row{
+    background:var(--theme2-dark2);
+}
+
+.theme2 .aio-input-panel{
+    border-radius:13px;
+    border:1px solid #ddd;
+}
+.theme2 .aio-input-panel-header{
+    color:var(--theme2-color1);
+    background:#ddd;
+    border-radius:12px 12px 0 0;
+}
+.theme2 .aio-input-panel-text{
+    font-weight: bold;
+}
+.theme2 mark{
+    color:var(--theme2-color1);
+    background:rgba(0,0,0,0.1);
+    padding:0 6px;
+    margin:6px;
+    border-radius:4px;
+}
+.theme2 .aio-input-card{
+    background: #eee;
+    box-shadow: 2px 2px 8px 0px rgb(0 0 0 / 39%);
+}
+.theme2 .aio-input-card:hover{
+    background:var(--theme2-color1);
+    transform: unset;
+    font-size:unset
+}

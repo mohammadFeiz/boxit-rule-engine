@@ -1,19 +1,20 @@
 {
   "name": "boxit-rule-engine",
-  "version": "1.0.2",
+  "version": "2.0.4",
   "description": "",
   "main": "index.js",
   "types":"index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "mohammad sharif feiz feiz.ms@gmail.com",
   "license": "ISC",
   "dependencies": {
     "jquery": "^3.6.1",
     "aio-popup":"latest",
     "aio-input":"latest",
     "aio-utils":"latest",
+    "aio-apis": "^4.0.1",
     "@mdi/js": "^7.0.96",
     "@mdi/react": "^1.6.1",
     "animejs": "^3.2.1"
