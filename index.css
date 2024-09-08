@@ -47,7 +47,7 @@
 }
 .rule-engine-form-row{
     background:var(--theme2-dark1);
-    border:1px solid #ddd;
+    border:1px solid #aaa;
     border-radius: 6px;;
 }
 .rule-engine-card-tag{
@@ -58,7 +58,6 @@
     background:#454545;
 }
 .rule-engine-form-row .aio-input{
-    border:1px solid #aaa !important; 
     border-radius:8px;
 }
 .rule-editor{

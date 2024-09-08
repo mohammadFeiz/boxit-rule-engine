@@ -14,11 +14,6 @@
     background:var(--theme2-color2);
 }
 .theme2 nav{
-    height:48px;
-    display:flex;
-    align-items: center;
-    padding:0 19px;
-    flex-shrink:0;
     background:rgba(0,0,0,0.9);
 }
 .theme2-bg-dark1{
@@ -39,18 +34,10 @@
     background:rgba(0,0,0,0.2)
 }
 .theme2 .aio-popup-header{
-    background:#111;
     color:#333;
-    border-bottom:1px solid rgba(0,0,0,0.8)
 }
-.theme2 .aio-popup-body{
-    border-top:1px solid rgba(255,255,255,0.07);
-    border-bottom:1px solid rgba(0,0,0,0.8);
-}
-.theme2 .aio-popup-footer{
-    background:#111;
-    border-top:1px solid rgba(255,255,255,0.07)
-}
+
+
 .theme2 .aio-popup-prompt textarea{
     background:#000;
     
@@ -81,7 +68,9 @@
     border-bottom:1px solid rgba(0,0,0,0.2);
 }
 .theme2 .aio-input-table{
-    background:var(--theme2-color2);
+    background:#ccc;
+    border:1px solid #ccc !important;
+    color:#222 !important;
     border:none;
     border-radius:8px;
     overflow:hidden
@@ -92,10 +81,10 @@
     border-bottom:none;
 }
 .theme2 .aio-input-table-row{
-    background:rgba(0,0,0,0.3) !important;
+    background:#eee !important;
 }
 .theme2 .aio-input-table-toolbar{
-    background:rgba(0,0,0,0.3) !important;
+    background:#eee !important;
 }
 .theme2 .aio-input-table-cell .aio-input{
     background:none
@@ -200,4 +189,16 @@
     background:var(--theme2-color1);
     transform: unset;
     font-size:unset
+}
+.theme2 .ai-range-fill{
+    background: var(--theme2-color1);
+}
+.theme2 .ai-range-point{
+    background: var(--theme2-color1);
+}
+.theme2 .aio-input-main-bg{
+    background:var(--theme2-color1)
+}
+.theme2 .aio-input-main-color{
+    color:var(--theme2-color1)
 }

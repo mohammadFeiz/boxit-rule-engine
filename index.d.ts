@@ -17,12 +17,13 @@ export type I_rule = {
     finalCode: string;
     name: string;
     id: number;
-    templateId: number;
+    template: string;
     categoryName: string;
     startDate?: string;
     endDate?: string;
     active: boolean;
-    isSaved?: boolean;
+    priority: number;
+    description: string;
 };
 type I_variable = any;
 type I_RuleEngine = {

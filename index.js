@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import AIOInput, { Code, AISelect, AITable, AITabs, AIText, AIButtons, AIDate, AICard, AIPanel, AISwitch } from "aio-input";
+import AIOInput, { Code, AISelect, AITable, AITabs, AIText, AIButtons, AIDate, AICard, AIPanel, AISwitch, AISlider, AITextarea, AICheckbox } from "aio-input";
 import Icon from "@mdi/react";
 //swagger
 //http://192.168.88.243:8090/swagger-ui/index.html#/rule-controller/update
@@ -9,8 +9,9 @@ import AIOPopup from "aio-popup";
 import AIOApis from "aio-apis";
 import './index.css';
 import './style.css';
-import './theme2.css';
+import './theme3.css';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -27,6 +28,7 @@ const RuleEngine = ({
   const [selectedTemplate, setSelectedTemplate] = useState();
   const [popup] = useState(new AIOPopup());
   const [model, setModel] = useState({});
+  const [mode, setMode] = useState();
   const [errors, setErrors] = useState([]);
   const [history, setHistory] = useState([]);
   const [apis] = useState(new apisClass(token, baseUrl));
@@ -169,16 +171,17 @@ const RuleEngine = ({
     }
     return false;
   }
-  function selectRule(rule) {
+  function selectRule(rule, mode) {
     if (rule) {
       changeModel(rule.model);
-      const template = templates.find(o => o.id === rule.templateId);
+      const template = JSON.parse(rule.template);
       if (template) {
         changeSelectedTemplate(template);
       } else {
         console.error('error543467344');
       }
     }
+    setMode(mode);
     setSelectedRule(rule ? JSON.parse(JSON.stringify(rule)) : undefined);
   }
   function removeRule(id) {
@@ -211,26 +214,6 @@ const RuleEngine = ({
       subtitle: template.name,
       text: 'َAre You Sure Want To Remove This Template?',
       onSubmit: async () => {
-        const ruleWithThisTemplate = rules.find(o => o.templateId === id);
-        if (!!ruleWithThisTemplate) {
-          popup.addSnackebar({
-            type: 'error',
-            text: 'you cannot remove this template',
-            subtext: 'There is some rules that use this template',
-            verticalAlign: 'start',
-            horizontalAlign: 'end',
-            attrs: {
-              style: {
-                maxWidth: 360,
-                background: '#111',
-                borderRadius: 12,
-                border: '2px solid #555',
-                fontSize: 16
-              }
-            }
-          });
-          return false;
-        }
         const res = await apis.remove_template(id);
         if (res) {
           setTemplates(templates.filter(o => o.id !== id));
@@ -253,7 +236,7 @@ const RuleEngine = ({
   async function addTemplate(newTemplate) {
     const res = await apis.add_template({
       ...newTemplate,
-      id: undefined
+      id: 0
     });
     if (typeof res === 'number') {
       setTemplates([...templates, {
@@ -347,14 +330,18 @@ const RuleEngine = ({
       changeSelectedTemplate,
       changeRule,
       errors,
-      validateCode
+      validateCode,
+      mode
     };
   }
   return /*#__PURE__*/_jsx(CTX.Provider, {
     value: getContext(),
     children: /*#__PURE__*/_jsxs("div", {
-      className: "rule-engine jfullscreen jflex-col theme2",
-      children: [/*#__PURE__*/_jsx(Nav, {}), !!selectedRule ? /*#__PURE__*/_jsx(RulePage, {}) : /*#__PURE__*/_jsx(Home, {}), popup.render()]
+      className: "rule-engine app-container theme2",
+      children: [/*#__PURE__*/_jsx(Nav, {}), /*#__PURE__*/_jsx("div", {
+        className: "app-body",
+        children: !!selectedRule ? /*#__PURE__*/_jsx(RulePage, {}) : /*#__PURE__*/_jsx(Home, {})
+      }), popup.render()]
     })
   });
 };
@@ -403,7 +390,7 @@ const Nav = () => {
     onExit
   } = useContext(CTX);
   return /*#__PURE__*/_jsxs("nav", {
-    className: "rule-engine-nav theme2-border-bottom",
+    className: "app-nav",
     children: [/*#__PURE__*/_jsx("div", {
       className: "rule-engine-app-title",
       children: "RULE ENGINE"
@@ -416,7 +403,7 @@ const Nav = () => {
         children: /*#__PURE__*/_jsxs("button", {
           type: "button",
           className: "theme2-button-1",
-          onClick: () => selectRule(undefined),
+          onClick: () => selectRule(undefined, undefined),
           children: [/*#__PURE__*/_jsx(Icon, {
             path: mdiHome,
             size: 0.9
@@ -504,10 +491,11 @@ const Rule = () => {
   const {
     selectedRule,
     changeRule,
-    generatePreview
+    generatePreview,
+    mode
   } = useContext(CTX);
   const rule = selectedRule;
-  const [tab, setTab] = useState(rule.isSaved !== false ? 'preview' : 'editor');
+  const [tab, setTab] = useState(mode === 'edit' ? 'preview' : 'editor');
   function changeTab(tab) {
     if (tab === 'preview') {
       changeRule({
@@ -529,6 +517,9 @@ const Rule = () => {
   }, {
     text: 'Activation',
     value: 'activation'
+  }, {
+    text: 'Exacute',
+    value: 'execute'
   }];
   return /*#__PURE__*/_jsxs("div", {
     className: "jflex-col theme2-border-left theme2-border-right jflex-1 jof-hidden",
@@ -538,7 +529,7 @@ const Rule = () => {
       options: options
     }), /*#__PURE__*/_jsxs("div", {
       className: "jflex-col jflex-1 jp-12 jgap-3 jofy-auto jw-100",
-      children: [tab === 'editor' && /*#__PURE__*/_jsx(RuleEditor, {}), tab === 'preview' && /*#__PURE__*/_jsx(RuleActions, {}), tab === 'activation' && /*#__PURE__*/_jsx(RuleActivation, {})]
+      children: [tab === 'editor' && /*#__PURE__*/_jsx(RuleEditor, {}), tab === 'preview' && /*#__PURE__*/_jsx(RuleActions, {}), tab === 'activation' && /*#__PURE__*/_jsx(RuleActivation, {}), tab === 'execute' && /*#__PURE__*/_jsx(RuleExecute, {})]
     })]
   });
 };
@@ -652,20 +643,31 @@ const RuleActivation = () => {
   }
   return /*#__PURE__*/_jsxs("div", {
     className: "jw-100 jrelative",
-    children: [row_layout('Start Date', /*#__PURE__*/_jsx(AIDate, {
-      ...props,
-      value: startDate,
-      onChange: startDate => setStartDate(startDate)
-    }), !startDate ? 'Start date is required' : ''), row_layout('End Date', /*#__PURE__*/_jsx(AIDate, {
-      ...props,
-      value: endDate,
-      onChange: endDate => setEndDate(endDate)
-    }), !endDate ? 'End date is required' : ''), row_layout('Activation', /*#__PURE__*/_jsx(AISwitch, {
-      value: !!(selectedRule !== null && selectedRule !== void 0 && selectedRule.active),
-      size: [24, 2, 3, 60],
-      colors: ['#ddd', '#ef5644'],
-      onChange: a => !errors.length ? activationModal(a) : undefined
-    })), !!errors.length && /*#__PURE__*/_jsxs("div", {
+    children: [/*#__PURE__*/_jsx(InputRow, {
+      label: "Start Date",
+      error: !startDate ? 'Start date is required' : '',
+      input: /*#__PURE__*/_jsx(AIDate, {
+        ...props,
+        value: startDate,
+        onChange: startDate => setStartDate(startDate)
+      })
+    }), /*#__PURE__*/_jsx(InputRow, {
+      label: "End Date",
+      error: !endDate ? 'End date is required' : '',
+      input: /*#__PURE__*/_jsx(AIDate, {
+        ...props,
+        value: endDate,
+        onChange: endDate => setEndDate(endDate)
+      })
+    }), /*#__PURE__*/_jsx(InputRow, {
+      label: "Activation",
+      input: /*#__PURE__*/_jsx(AISwitch, {
+        value: !!(selectedRule !== null && selectedRule !== void 0 && selectedRule.active),
+        size: [24, 2, 3, 60],
+        colors: ['#ddd', '#ef5644'],
+        onChange: a => !errors.length ? activationModal(a) : undefined
+      })
+    }), !!errors.length && /*#__PURE__*/_jsxs("div", {
       className: "jfs-10 jflex-row jalign-v jgap-6",
       style: {
         color: 'red'
@@ -679,6 +681,170 @@ const RuleActivation = () => {
     })]
   });
 };
+const RuleExecute = () => {
+  const {
+    selectedRule,
+    apis
+  } = useContext(CTX);
+  const [model, setModel] = useState({});
+  const [showKeys, setShowKeys] = useState({});
+  async function execute() {
+    if (!selectedRule) {
+      return;
+    }
+    let fixedModel = {};
+    for (let prop in model) {
+      if (showKeys[prop] === true) {
+        fixedModel[prop] = model[prop];
+      }
+    }
+    const jsonString = JSON.stringify(fixedModel);
+    const res = await apis.execute(selectedRule.id, jsonString);
+  }
+  function json_layout() {
+    const rows = [{
+      key: 'weight',
+      type: 'number'
+    }, {
+      key: 'height',
+      type: 'number'
+    }, {
+      key: 'width',
+      type: 'number'
+    }, {
+      key: 'length',
+      type: 'number'
+    }, {
+      key: 'costOfGood',
+      type: 'number'
+    }, {
+      key: 'needToCod',
+      type: 'number'
+    }, {
+      key: 'needToPackage',
+      type: 'number'
+    }, {
+      key: 'needToPickup',
+      type: 'number'
+    }, {
+      key: 'paymentByReceiver',
+      type: 'number'
+    }, {
+      key: 'cdt',
+      type: 'text'
+    }, {
+      key: 'cct',
+      type: 'text'
+    }, {
+      key: 'company',
+      type: 'text'
+    }, {
+      key: 'hub',
+      type: 'text'
+    }, {
+      key: 'companyGroup',
+      type: 'text'
+    }, {
+      key: 'serviceCode',
+      type: 'text'
+    }, {
+      key: 'timeCommitmentDuration',
+      type: 'number'
+    }, {
+      key: 'timeCommitmentFrom',
+      type: 'number'
+    }, {
+      key: 'countryDevision',
+      type: 'text'
+    }, {
+      key: 'fromCity',
+      type: 'text'
+    }, {
+      key: 'toCity',
+      type: 'text'
+    }];
+    return /*#__PURE__*/_jsx("div", {
+      className: "jflex-col",
+      children: rows.map(o => json_row_layout(o))
+    });
+  }
+  function json_row_layout(p) {
+    return /*#__PURE__*/_jsxs("div", {
+      className: "jflex-row jgap-6 jalign-v jp-v-6 jbrd-c-14 jbrd-b",
+      style: {
+        opacity: showKeys[p.key] === true ? 1 : 0.4
+      },
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "msf",
+        children: /*#__PURE__*/_jsx(AICheckbox, {
+          className: "jbrd-none jw-180",
+          text: p.key,
+          value: showKeys[p.key] === true,
+          onChange: v => {
+            const newModel = {
+              ...model,
+              [p.key]: undefined
+            };
+            setModel(newModel);
+            setShowKeys({
+              ...showKeys,
+              [p.key]: v
+            });
+          }
+        })
+      }), /*#__PURE__*/_jsx("div", {
+        className: "msf",
+        children: /*#__PURE__*/_jsx(AIOInput, {
+          type: p.type,
+          disabled: showKeys[p.key] !== true,
+          value: model[p.key],
+          onChange: v => {
+            const newModel = {
+              ...model,
+              [p.key]: v
+            };
+            setModel(newModel);
+          }
+        })
+      })]
+    });
+  }
+  function code_layout() {
+    const res = Code(JSON.stringify(model, null, 4));
+    return res;
+  }
+  return /*#__PURE__*/_jsxs("div", {
+    className: "flex-col",
+    children: [json_layout(), code_layout(), /*#__PURE__*/_jsx("button", {
+      onClick: () => execute(),
+      children: "Execute"
+    })]
+  });
+};
+const InputRow = ({
+  label,
+  input,
+  error
+}) => {
+  return /*#__PURE__*/_jsxs(_Fragment, {
+    children: [/*#__PURE__*/_jsxs("div", {
+      className: `jflex-row jalign-v jgap-12 jp-12 jm-b-3 jrelative rule-engine-form-row`,
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "msf",
+        children: label
+      }), /*#__PURE__*/_jsx("div", {
+        className: "jflex-1"
+      }), input]
+    }), !!error && /*#__PURE__*/_jsxs("div", {
+      className: "rule-engine-activation-error",
+      title: error,
+      children: [/*#__PURE__*/_jsx(Icon, {
+        path: mdiInformation,
+        size: 0.6
+      }), error]
+    })]
+  });
+};
 const RuleActions = () => {
   const {
     selectedRule,
@@ -686,45 +852,79 @@ const RuleActions = () => {
     apis,
     addRule,
     selectRule,
-    editRule
+    editRule,
+    changeRule,
+    mode
   } = useContext(CTX);
   const rule = selectedRule;
   async function add() {
     const res = await addRule();
     if (res) {
-      selectRule(undefined);
+      selectRule(undefined, undefined);
     }
   }
   async function edit() {
     const res = await editRule();
     if (res) {
-      selectRule(undefined);
+      selectRule(undefined, undefined);
     }
   }
   const btnCLS = 'theme2-button-2 jh-48 jw-120  jfs-16';
   function save_layout() {
-    if (rule.isSaved !== false) {
+    if (mode !== 'add') {
       return null;
     }
+    const disabled = !rule.description || typeof rule.priority !== 'number';
     return /*#__PURE__*/_jsx("button", {
+      disabled: disabled,
       className: btnCLS,
       onClick: () => add(),
       children: "Save"
     });
   }
   function edit_layout() {
-    if (rule.isSaved === false) {
+    if (mode !== 'edit') {
       return null;
     }
+    const disabled = !rule.description || typeof rule.priority !== 'number';
     return /*#__PURE__*/_jsx("button", {
+      disabled: disabled,
       className: btnCLS,
       onClick: () => edit(),
       children: "Save"
     });
   }
+  function priority_layout() {
+    return /*#__PURE__*/_jsx(InputRow, {
+      label: "Priority",
+      input: /*#__PURE__*/_jsx(AISlider, {
+        start: 0,
+        end: 12,
+        className: "jflex-1 jbrd-none",
+        value: rule.priority || 0,
+        onChange: priority => changeRule({
+          priority
+        })
+      })
+    });
+  }
+  function description_layout() {
+    return /*#__PURE__*/_jsx(InputRow, {
+      label: "description",
+      input: /*#__PURE__*/_jsx(AITextarea, {
+        value: rule.description,
+        className: "jflex-1",
+        delay: 0,
+        onChange: description => changeRule({
+          description
+        })
+      }),
+      error: !rule.description ? 'description is required' : undefined
+    });
+  }
   return /*#__PURE__*/_jsxs("div", {
     className: "",
-    children: [Code(rule.finalCode || generatePreview()), /*#__PURE__*/_jsx(RuleErrors, {}), save_layout(), edit_layout()]
+    children: [Code(rule.finalCode || generatePreview()), /*#__PURE__*/_jsx(RuleErrors, {}), priority_layout(), description_layout(), save_layout(), edit_layout()]
   });
 };
 const RuleErrors = () => {
@@ -811,8 +1011,8 @@ const RuleEditor = props => {
           rowIndex: rowIndex,
           cellIndex: cellIndex,
           model: model,
-          onChange: (field, value) => changeModelByField(field, value)
-        });
+          onChange: props.disabled ? undefined : (field, value) => changeModelByField(field, value)
+        }, cellIndex);
       })
     });
   }
@@ -839,7 +1039,7 @@ const CodeCell = ({
       className: "jw-fit jbrd-none",
       options: options,
       value: value,
-      onChange: newValue => onChange(selectfield, newValue),
+      onChange: !onChange ? undefined : newValue => onChange(selectfield, newValue),
       option: {
         text: 'option',
         value: 'option'
@@ -854,7 +1054,10 @@ const CodeCell = ({
       type: "text",
       className: "jw-fit jbrd-none",
       value: model[field] || '',
-      onChange: newValue => onChange(field, newValue),
+      style: {
+        minWidth: 96
+      },
+      onChange: !onChange ? undefined : newValue => onChange(field, newValue),
       validations: ['required'],
       lang: "en",
       showErrors: false
@@ -874,7 +1077,7 @@ const CodeCell = ({
         className: 'resize-v'
       },
       value: model[field] || '',
-      onChange: newValue => onChange(field, newValue),
+      onChange: !onChange ? undefined : newValue => onChange(field, newValue),
       autoHighlight: false,
       validations: ['required'],
       lang: "en",
@@ -1063,8 +1266,7 @@ const HomeRules = () => {
     });
   }
   function getEntityButton(rule) {
-    const template = templates.find(o => o.id === rule.templateId);
-    let subtextList = [rule.categoryName, `template:${template === null || template === void 0 ? void 0 : template.name}`, `id:${rule.id}`, typeof rule.startDate === 'string' ? `${rule.startDate}` : 'date not set'];
+    let subtextList = [rule.categoryName, `id:${rule.id}`, typeof rule.startDate === 'string' ? `${rule.startDate} - ${rule.endDate}` : 'deactive'];
     const subtext = /*#__PURE__*/_jsxs("div", {
       className: "jflex-row jgap-3 jp-v-6",
       children: [subtextList.map((o, index) => {
@@ -1083,6 +1285,8 @@ const HomeRules = () => {
       })]
     });
     return /*#__PURE__*/_jsx(AICard, {
+      subtext: subtext,
+      onClick: () => selectRule(rule, 'edit'),
       text: /*#__PURE__*/_jsxs("div", {
         className: "jflex-row jalign-v jgap-6 theme2-bg1",
         children: [/*#__PURE__*/_jsx(Icon, {
@@ -1090,8 +1294,6 @@ const HomeRules = () => {
           size: 0.8
         }), rule.name]
       }),
-      subtext: subtext,
-      onClick: () => selectRule(rule),
       after: /*#__PURE__*/_jsx("div", {
         className: "msf",
         onClick: () => removeRule(rule.id),
@@ -1118,18 +1320,19 @@ const HomeRules = () => {
       body: () => {
         return /*#__PURE__*/_jsx(AddRule, {
           categoryNames: Object.keys(cats),
-          onSubmit: async (name, templateId, categoryName) => {
+          onSubmit: async (name, templateString, categoryName) => {
             const newRule = {
               categoryName,
               finalCode: '',
-              templateId,
+              template: templateString,
               name,
               model: {},
               active: false,
               id: 0,
-              isSaved: false
+              priority: 0,
+              description: ''
             };
-            selectRule(newRule);
+            selectRule(newRule, 'add');
             popup.removeModal();
           }
         });
@@ -1213,6 +1416,9 @@ const AddRule = ({
       options: templates,
       validations: ['required'],
       value: templateId,
+      attrs: {
+        tabIndex: 0
+      },
       placeholder: "Select Template",
       subtext: templateId !== undefined ? templateId : undefined,
       option: {
@@ -1238,7 +1444,10 @@ const AddRule = ({
       value: categoryName,
       option: {
         text: 'option',
-        value: 'option'
+        value: 'option',
+        onClick: ({
+          option
+        }) => setCategoryName(option)
       },
       popover: {
         fitHorizontal: true
@@ -1256,7 +1465,14 @@ const AddRule = ({
       type: "button",
       className: "theme2-button-2",
       disabled: disabled,
-      onClick: () => onSubmit(name, templateId, categoryName),
+      onClick: () => {
+        const template = templates.find(o => o.id === templateId);
+        if (!template) {
+          return;
+        }
+        const templateString = JSON.stringify(template);
+        onSubmit(name, templateString, categoryName);
+      },
       children: "Add Rule"
     })]
   });
@@ -1370,7 +1586,8 @@ const Template = props => {
       }), /*#__PURE__*/_jsx("div", {
         className: "jflex-1 jofy-auto jp-24 jgap-16 jflex-col",
         children: /*#__PURE__*/_jsx(RuleEditor, {
-          template: template
+          template: template,
+          disabled: true
         })
       })]
     });
@@ -1810,6 +2027,18 @@ class apisClass {
   constructor(token, baseUrl) {
     _defineProperty(this, "request", void 0);
     _defineProperty(this, "baseUrl", 'http://boxi:40000/core-api/v1/');
+    _defineProperty(this, "execute", async (ruleId, text) => {
+      return await this.request({
+        description: 'اجرای رول',
+        method: 'post',
+        url: `${this.baseUrl}execute/${ruleId}`,
+        errorResult: [],
+        body: JSON.parse(text),
+        getResult: response => {
+          debugger;
+        }
+      });
+    });
     _defineProperty(this, "get_templates", async () => {
       //return this.mock_get_templates()
       return await this.request({
@@ -1873,11 +2102,13 @@ class apisClass {
             return {
               id: o.id,
               name: o.name,
+              priority: o.priority,
               categoryName: o.code,
               finalCode: o.content,
               startDate: o.activatedDate,
               endDate: o.finalDate,
-              templateId: o.templateId,
+              template: o.template,
+              description: typeof o.description === 'string' ? o.description : '',
               model: JSON.parse(o.model),
               active: o.isActive
             };
@@ -1890,8 +2121,9 @@ class apisClass {
         name: newRule.name,
         code: newRule.categoryName,
         content: newRule.finalCode,
-        templateId: newRule.templateId,
-        model: newRule.model
+        template: newRule.template,
+        model: newRule.model,
+        priority: newRule.priority
       };
       return await this.request({
         description: 'افزودن رول به رول انجین',
@@ -1903,21 +2135,21 @@ class apisClass {
       });
     });
     _defineProperty(this, "edit_rule", async newRule => {
+      const body = {
+        name: newRule.name,
+        code: newRule.categoryName,
+        content: newRule.finalCode,
+        template: newRule.template,
+        model: newRule.model,
+        priority: newRule.priority
+      };
       return await this.request({
         description: 'ویرایش رول در رول انجین',
         method: 'post',
         url: `${this.baseUrl}rules/update/${newRule.id}`,
-        body: {
-          name: newRule.name,
-          code: newRule.categoryName,
-          content: newRule.finalCode,
-          templateId: newRule.templateId,
-          model: newRule.model
-        },
+        body,
         errorResult: false,
-        getResult: response => {
-          return response.status === 200;
-        }
+        getResult: response => response.status === 200
       });
     });
     _defineProperty(this, "remove_rule", async ruleId => {
@@ -1955,15 +2187,18 @@ class apisClass {
         url: `${this.baseUrl}rules/activeRule/${rule.id}`,
         errorResult: false,
         body,
-        getResult: response => {
-          debugger;
-          return response.data.status === 'OK';
-        }
+        getResult: response => response.data.status === 'OK'
       });
-      return true;
     });
     _defineProperty(this, "deactiveRule", async rule => {
-      return true;
+      return await this.request({
+        description: 'غیر فعالسازی رول',
+        method: 'post',
+        url: `${this.baseUrl}rules/deActiveRule/${rule.id}`,
+        errorResult: false,
+        body: {},
+        getResult: response => response.data.status === 'OK'
+      });
     });
     _defineProperty(this, "validate", async code => {
       return await this.request({
@@ -2020,8 +2255,7 @@ class apisClass {
         "templateId": 1,
         "model": "{}",
         "startDate": undefined,
-        "active": false,
-        isSaved: true
+        "active": false
       }];
     });
     this.request = new AIOApis({
