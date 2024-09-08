@@ -11,7 +11,6 @@ import './index.css';
 import './style.css';
 import './theme3.css';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -688,6 +687,7 @@ const RuleExecute = () => {
   } = useContext(CTX);
   const [model, setModel] = useState({});
   const [showKeys, setShowKeys] = useState({});
+  const [result, setResult] = useState();
   async function execute() {
     if (!selectedRule) {
       return;
@@ -700,68 +700,130 @@ const RuleExecute = () => {
     }
     const jsonString = JSON.stringify(fixedModel);
     const res = await apis.execute(selectedRule.id, jsonString);
+    setResult(JSON.stringify(res, null, 4));
   }
   function json_layout() {
     const rows = [{
       key: 'weight',
-      type: 'number'
+      type: 'number',
+      description: 'وزن(کیلوگرم)'
     }, {
       key: 'height',
-      type: 'number'
+      type: 'number',
+      description: 'ارتفاع (سانتیمتر)'
     }, {
       key: 'width',
-      type: 'number'
+      type: 'number',
+      description: 'عرض (سانتیمتر)'
     }, {
       key: 'length',
-      type: 'number'
+      type: 'number',
+      description: 'طول (سانتیمتر)'
     }, {
       key: 'costOfGood',
-      type: 'number'
+      type: 'number',
+      description: 'ارزش بسته (تومان)'
     }, {
       key: 'needToCod',
-      type: 'number'
+      type: 'select',
+      description: 'نیازمند دریافت هزینه',
+      options: [{
+        text: 'خیر',
+        value: 0
+      }, {
+        text: 'بله',
+        value: 1
+      }]
     }, {
       key: 'needToPackage',
-      type: 'number'
+      type: 'select',
+      description: 'نیازمند بسته بندی',
+      options: [{
+        text: 'خیر',
+        value: 0
+      }, {
+        text: 'بله',
+        value: 1
+      }]
     }, {
       key: 'needToPickup',
-      type: 'number'
+      type: 'select',
+      description: 'نیازمند جمع آوری',
+      options: [{
+        text: 'خیر',
+        value: 0
+      }, {
+        text: 'بله',
+        value: 1
+      }]
     }, {
       key: 'paymentByReceiver',
-      type: 'number'
+      type: 'select',
+      description: 'پرداخت با گیرنده',
+      options: [{
+        text: 'خیر',
+        value: 0
+      }, {
+        text: 'بله',
+        value: 1
+      }]
     }, {
       key: 'cdt',
-      type: 'text'
+      type: 'select',
+      description: 'رده جغرافیایی',
+      options: [{
+        text: 'درون شهری',
+        value: 'INNER'
+      }, {
+        text: 'برون شهری',
+        value: 'OUTER'
+      }, {
+        text: 'همجوار',
+        value: 'CLOSER'
+      }]
     }, {
       key: 'cct',
-      type: 'text'
+      type: 'select',
+      description: 'نوع بسته',
+      options: [{
+        text: 'اسناد',
+        value: 'DOCUMENT'
+      }, {
+        text: 'بسته',
+        value: 'PACKET'
+      }]
     }, {
       key: 'company',
-      type: 'text'
+      type: 'text',
+      description: 'نام شرکت'
     }, {
       key: 'hub',
-      type: 'text'
+      type: 'text',
+      description: 'نام هاب'
     }, {
       key: 'companyGroup',
-      type: 'text'
-    }, {
-      key: 'serviceCode',
-      type: 'text'
+      type: 'text',
+      description: 'گروه شرکتها'
     }, {
       key: 'timeCommitmentDuration',
-      type: 'number'
+      type: 'number',
+      description: 'مدت ارایه خدمت (ساعت)'
     }, {
       key: 'timeCommitmentFrom',
-      type: 'number'
+      type: 'number',
+      description: 'زمان ارایه خدمت (ساعت)'
     }, {
       key: 'countryDevision',
-      type: 'text'
+      type: 'text',
+      description: 'شهر خاص'
     }, {
       key: 'fromCity',
-      type: 'text'
+      type: 'text',
+      description: 'از شهر'
     }, {
       key: 'toCity',
-      type: 'text'
+      type: 'text',
+      description: 'به شهر'
     }];
     return /*#__PURE__*/_jsx("div", {
       className: "jflex-col",
@@ -779,6 +841,7 @@ const RuleExecute = () => {
         children: /*#__PURE__*/_jsx(AICheckbox, {
           className: "jbrd-none jw-180",
           text: p.key,
+          subtext: p.description,
           value: showKeys[p.key] === true,
           onChange: v => {
             const newModel = {
@@ -786,6 +849,7 @@ const RuleExecute = () => {
               [p.key]: undefined
             };
             setModel(newModel);
+            setResult(undefined);
             setShowKeys({
               ...showKeys,
               [p.key]: v
@@ -798,11 +862,13 @@ const RuleExecute = () => {
           type: p.type,
           disabled: showKeys[p.key] !== true,
           value: model[p.key],
+          options: p.options,
           onChange: v => {
             const newModel = {
               ...model,
               [p.key]: v
             };
+            setResult(undefined);
             setModel(newModel);
           }
         })
@@ -813,9 +879,25 @@ const RuleExecute = () => {
     const res = Code(JSON.stringify(model, null, 4));
     return res;
   }
+  function response_layout() {
+    if (!result) {
+      return null;
+    }
+    return /*#__PURE__*/_jsxs("div", {
+      className: "jflex-col",
+      children: [/*#__PURE__*/_jsx("div", {
+        className: "msf",
+        children: "Response"
+      }), /*#__PURE__*/_jsx("div", {
+        className: "msf",
+        children: Code(result)
+      })]
+    });
+  }
   return /*#__PURE__*/_jsxs("div", {
     className: "flex-col",
-    children: [json_layout(), code_layout(), /*#__PURE__*/_jsx("button", {
+    children: [json_layout(), code_layout(), response_layout(), /*#__PURE__*/_jsx("button", {
+      className: "theme2-button-2",
       onClick: () => execute(),
       children: "Execute"
     })]
@@ -2031,11 +2113,13 @@ class apisClass {
       return await this.request({
         description: 'اجرای رول',
         method: 'post',
-        url: `${this.baseUrl}execute/${ruleId}`,
+        url: `${this.baseUrl}rules/execute/eval/${ruleId}`,
         errorResult: [],
-        body: JSON.parse(text),
+        body: {
+          in: text
+        },
         getResult: response => {
-          debugger;
+          return response.data.payload;
         }
       });
     });
@@ -2099,6 +2183,12 @@ class apisClass {
         body: {},
         getResult: response => {
           return response.data.payload.map(o => {
+            let model;
+            try {
+              model = JSON.parse(o.model);
+            } catch {
+              model = {};
+            }
             return {
               id: o.id,
               name: o.name,
@@ -2109,7 +2199,7 @@ class apisClass {
               endDate: o.finalDate,
               template: o.template,
               description: typeof o.description === 'string' ? o.description : '',
-              model: JSON.parse(o.model),
+              model,
               active: o.isActive
             };
           });

@@ -15,6 +15,11 @@
 }
 .theme2 nav{
     background:rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    box-sizing: border-box;
+    height: 48px;
 }
 .theme2-bg-dark1{
     background: var(--theme2-dark1);
@@ -201,4 +206,7 @@
 }
 .theme2 .aio-input-main-color{
     color:var(--theme2-color1)
+}
+.theme2 .aio-input-check-0 div:before{
+    box-sizing:unset !important
 }
