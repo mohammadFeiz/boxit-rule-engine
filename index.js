@@ -3,7 +3,7 @@ import AIOInput, { Code, AISelect, AITable, AITabs, AIText, AIButtons, AIDate, A
 import Icon from "@mdi/react";
 //swagger
 //http://192.168.88.243:8090/swagger-ui/index.html#/rule-controller/update
-import { mdiAlert, mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiCloseCircle, mdiDelete, mdiDotsHorizontal, mdiFileCode, mdiHistory, mdiHome, mdiInformation, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
+import { mdiAlert, mdiArrowCollapseLeft, mdiArrowCollapseRight, mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiCloseCircle, mdiDelete, mdiDotsHorizontal, mdiFileCode, mdiHistory, mdiHome, mdiInformation, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
 import { AIODate, DragClass, GetRandomNumber } from "aio-utils";
 import AIOPopup from "aio-popup";
 import AIOApis from "aio-apis";
@@ -725,7 +725,7 @@ const RuleExecute = () => {
       description: 'ارزش بسته (تومان)'
     }, {
       key: 'needToCod',
-      type: 'select',
+      type: 'radio',
       description: 'نیازمند دریافت هزینه',
       options: [{
         text: 'خیر',
@@ -736,7 +736,7 @@ const RuleExecute = () => {
       }]
     }, {
       key: 'needToPackage',
-      type: 'select',
+      type: 'radio',
       description: 'نیازمند بسته بندی',
       options: [{
         text: 'خیر',
@@ -747,7 +747,7 @@ const RuleExecute = () => {
       }]
     }, {
       key: 'needToPickup',
-      type: 'select',
+      type: 'radio',
       description: 'نیازمند جمع آوری',
       options: [{
         text: 'خیر',
@@ -758,7 +758,7 @@ const RuleExecute = () => {
       }]
     }, {
       key: 'paymentByReceiver',
-      type: 'select',
+      type: 'radio',
       description: 'پرداخت با گیرنده',
       options: [{
         text: 'خیر',
@@ -769,7 +769,7 @@ const RuleExecute = () => {
       }]
     }, {
       key: 'cdt',
-      type: 'select',
+      type: 'radio',
       description: 'رده جغرافیایی',
       options: [{
         text: 'درون شهری',
@@ -783,7 +783,7 @@ const RuleExecute = () => {
       }]
     }, {
       key: 'cct',
-      type: 'select',
+      type: 'radio',
       description: 'نوع بسته',
       options: [{
         text: 'اسناد',
@@ -912,10 +912,8 @@ const InputRow = ({
     children: [/*#__PURE__*/_jsxs("div", {
       className: `jflex-row jalign-v jgap-12 jp-12 jm-b-3 jrelative rule-engine-form-row`,
       children: [/*#__PURE__*/_jsx("div", {
-        className: "msf",
+        className: "jw-144",
         children: label
-      }), /*#__PURE__*/_jsx("div", {
-        className: "jflex-1"
       }), input]
     }), !!error && /*#__PURE__*/_jsxs("div", {
       className: "rule-engine-activation-error",
@@ -936,7 +934,8 @@ const RuleActions = () => {
     selectRule,
     editRule,
     changeRule,
-    mode
+    mode,
+    rules
   } = useContext(CTX);
   const rule = selectedRule;
   async function add() {
@@ -1004,9 +1003,25 @@ const RuleActions = () => {
       error: !rule.description ? 'description is required' : undefined
     });
   }
+  function category_layout() {
+    return /*#__PURE__*/_jsx(InputRow, {
+      label: "Category",
+      input: /*#__PURE__*/_jsx(AIText, {
+        validations: ['required'],
+        value: selectedRule === null || selectedRule === void 0 ? void 0 : selectedRule.categoryName,
+        className: "jflex-1",
+        onChange: categoryName => changeRule({
+          categoryName
+        }),
+        placeholder: "Inter rule category",
+        showErrors: false
+      }),
+      error: !rule.categoryName ? 'categoryName is required' : undefined
+    });
+  }
   return /*#__PURE__*/_jsxs("div", {
     className: "",
-    children: [Code(rule.finalCode || generatePreview()), /*#__PURE__*/_jsx(RuleErrors, {}), priority_layout(), description_layout(), save_layout(), edit_layout()]
+    children: [Code(rule.finalCode || generatePreview()), /*#__PURE__*/_jsx(RuleErrors, {}), priority_layout(), description_layout(), category_layout(), save_layout(), edit_layout()]
   });
 };
 const RuleErrors = () => {
@@ -1321,7 +1336,6 @@ const HomeRules = () => {
   const {
     popup,
     rules,
-    templates,
     selectRule,
     removeRule
   } = useContext(CTX);
@@ -1401,7 +1415,7 @@ const HomeRules = () => {
       },
       body: () => {
         return /*#__PURE__*/_jsx(AddRule, {
-          categoryNames: Object.keys(cats),
+          categoryNames: Object.keys(cats).filter(o => o !== 'All Rules'),
           onSubmit: async (name, templateString, categoryName) => {
             const newRule = {
               categoryName,
@@ -1647,7 +1661,7 @@ const Template = props => {
       }), /*#__PURE__*/_jsx("div", {
         className: "jflex-1 jofy-auto",
         children: /*#__PURE__*/_jsxs("div", {
-          className: "jflex-col jp-24 jflex-1",
+          className: "jflex-col jp-12 jflex-1",
           children: [/*#__PURE__*/_jsx(AddTemplateCellButton, {
             onAdd: (v, rows) => addFirstCell(v, rows),
             isEmptyRow: true
@@ -1741,6 +1755,39 @@ const Template = props => {
       rows: newRows
     });
   }
+  function addIndent(rowIndex) {
+    let row = template.rows[rowIndex];
+    if (!row) {
+      return;
+    }
+    const newRow = {
+      ...row,
+      cells: ['indent', ...row.cells]
+    };
+    const newRows = template.rows.map((o, i) => i === rowIndex ? newRow : o);
+    setTemplate({
+      ...template,
+      rows: newRows
+    });
+  }
+  function removeIndent(rowIndex) {
+    let row = template.rows[rowIndex];
+    if (!row) {
+      return;
+    }
+    if (row.cells[0] === 'indent') {
+      const [, ...newCells] = row.cells;
+      const newRow = {
+        ...row,
+        cells: newCells
+      };
+      const newRows = template.rows.map((o, i) => i === rowIndex ? newRow : o);
+      setTemplate({
+        ...template,
+        rows: newRows
+      });
+    }
+  }
   function importRows(rowIndex, newRows) {
     let tempRows = [];
     for (let i = 0; i < template.rows.length; i++) {
@@ -1780,7 +1827,9 @@ const Template = props => {
       removeCell,
       addCell,
       changeCell,
-      importRows
+      importRows,
+      addIndent,
+      removeIndent
     };
   }
   return /*#__PURE__*/_jsx(TemplateContext.Provider, {
@@ -1836,9 +1885,6 @@ const AddTemplateCellButton = ({
   }, {
     text: 'Code Block',
     value: 'code_block'
-  }, {
-    text: 'Indent',
-    value: 'indent'
   }, {
     text: 'Import Template',
     value: 'import',
@@ -1903,6 +1949,9 @@ const AddTemplateCellButton = ({
       } else {
         onAdd(v);
       }
+    },
+    popover: {
+      position: 'center'
     }
   });
 };
@@ -1912,19 +1961,55 @@ const TemplateRow = ({
 }) => {
   const {
     removeCell,
-    addCell
+    addCell,
+    removeIndent,
+    addIndent
   } = useContext(TemplateContext);
   function addCell_layout(rowIndex, isEmptyRow) {
     return /*#__PURE__*/_jsxs("div", {
       className: "jflex-row jalign-v",
       children: [/*#__PURE__*/_jsx("button", {
+        className: "jbg-none jbrd-none jw-24 jh-24 jflex-row jalign-vh jp-0",
+        style: {
+          color: '#bbb',
+          opacity: isEmptyRow ? 0 : 1
+        },
+        onClick: () => {
+          if (!isEmptyRow) {
+            removeIndent(rowIndex);
+          }
+        },
+        children: /*#__PURE__*/_jsx(Icon, {
+          path: mdiArrowCollapseLeft,
+          size: 0.5
+        })
+      }), /*#__PURE__*/_jsx("button", {
+        className: "jbg-none jbrd-none jw-24 jh-24 jflex-row jalign-vh jp-0",
+        style: {
+          color: '#bbb',
+          opacity: isEmptyRow ? 0 : 1
+        },
+        onClick: () => {
+          if (!isEmptyRow) {
+            addIndent(rowIndex);
+          }
+        },
+        children: /*#__PURE__*/_jsx(Icon, {
+          path: mdiArrowCollapseRight,
+          size: 0.5
+        })
+      }), /*#__PURE__*/_jsx("button", {
         type: "button",
         className: "jbg-none jbrd-none jw-24 jh-24 jflex-row jalign-vh jp-0",
         style: {
           color: 'orange',
           opacity: isEmptyRow ? 0 : 1
         },
-        onClick: () => removeCell(rowIndex),
+        onClick: () => {
+          if (!isEmptyRow) {
+            removeCell(rowIndex);
+          }
+        },
         children: /*#__PURE__*/_jsx(Icon, {
           path: mdiDelete,
           size: 0.7
@@ -2213,7 +2298,8 @@ class apisClass {
         content: newRule.finalCode,
         template: newRule.template,
         model: newRule.model,
-        priority: newRule.priority
+        priority: newRule.priority,
+        description: newRule.description
       };
       return await this.request({
         description: 'افزودن رول به رول انجین',
