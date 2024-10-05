@@ -3,7 +3,7 @@ import AIOInput, { Code, AISelect, AITable, AITabs, AIText, AIButtons, AIDate, A
 import Icon from "@mdi/react";
 //swagger
 //http://192.168.88.243:8090/swagger-ui/index.html#/rule-controller/update
-import { mdiAlert, mdiArrowCollapseLeft, mdiArrowCollapseRight, mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiCloseCircle, mdiDelete, mdiDotsHorizontal, mdiFileCode, mdiHistory, mdiHome, mdiInformation, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
+import { mdiAlert, mdiArrowCollapseLeft, mdiArrowCollapseRight, mdiArrowExpandHorizontal, mdiCheckBold, mdiClose, mdiCloseCircle, mdiContentCopy, mdiDelete, mdiDotsHorizontal, mdiFileCode, mdiHistory, mdiHome, mdiInformation, mdiPlusCircleOutline, mdiPlusThick } from "@mdi/js";
 import { AIODate, DragClass, GetRandomNumber } from "aio-utils";
 import AIOPopup from "aio-popup";
 import AIOApis from "aio-apis";
@@ -150,6 +150,26 @@ const RuleEngine = ({
         id: res
       });
       setRules([...rules, newRule]);
+      return true;
+    }
+    return false;
+  }
+  async function cloneRule(rule) {
+    const name = window.prompt('inter rule name to clone');
+    if (!name || name === null) {
+      return;
+    }
+    const newRule = {
+      ...rule,
+      name,
+      model: JSON.stringify(rule.model)
+    };
+    const res = await apis.add_rule(newRule);
+    if (res !== false) {
+      setRules([...rules, {
+        ...newRule,
+        id: res
+      }]);
       return true;
     }
     return false;
@@ -330,7 +350,8 @@ const RuleEngine = ({
       changeRule,
       errors,
       validateCode,
-      mode
+      mode,
+      cloneRule
     };
   }
   return /*#__PURE__*/_jsx(CTX.Provider, {
@@ -1337,7 +1358,8 @@ const HomeRules = () => {
     popup,
     rules,
     selectRule,
-    removeRule
+    removeRule,
+    cloneRule
   } = useContext(CTX);
   const [cat, setCat] = useState('All Rules');
   function getCats() {
@@ -1390,13 +1412,23 @@ const HomeRules = () => {
           size: 0.8
         }), rule.name]
       }),
-      after: /*#__PURE__*/_jsx("div", {
-        className: "msf",
-        onClick: () => removeRule(rule.id),
-        children: /*#__PURE__*/_jsx(Icon, {
-          path: mdiClose,
-          size: 1
-        })
+      after: /*#__PURE__*/_jsxs("div", {
+        className: "jflex-row jgap-16",
+        children: [/*#__PURE__*/_jsx("div", {
+          className: "msf",
+          onClick: () => cloneRule(rule),
+          children: /*#__PURE__*/_jsx(Icon, {
+            path: mdiContentCopy,
+            size: 1
+          })
+        }), /*#__PURE__*/_jsx("div", {
+          className: "msf",
+          onClick: () => removeRule(rule.id),
+          children: /*#__PURE__*/_jsx(Icon, {
+            path: mdiClose,
+            size: 1
+          })
+        })]
       })
     }, rule.id);
   }
