@@ -41,8 +41,6 @@
 .theme2 .aio-popup-header{
     color:#333;
 }
-
-
 .theme2 .aio-popup-prompt textarea{
     background:#000;
     
@@ -149,16 +147,16 @@
 }
 
 .theme2 .aio-input-theme-bg0{
-    background:var(--theme2-dark1);
+    background:var(--theme2-color1);
 }
 .theme2 .aio-input-theme-bg1{
     background:var(--theme2-color2);
 }
 .theme2 .aio-input-theme-color0{
-    color:var(--theme2-light1);
+    color:var(--theme2-color1);
 }
 .theme2 .aio-input-theme-color1{
-    color:var(--theme2-color1);
+    color:var(--theme2-color2);
 }
 .theme2 .aio-input-table{
     color:var(--theme2-light1);
