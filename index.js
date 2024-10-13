@@ -2375,7 +2375,7 @@ class apisClass {
     _defineProperty(this, "activeRule", async (rule, startDate, endDate) => {
       const [ay, am, ad] = new AIODate().convertToArray(startDate);
       let body = {
-        activateDate: {
+        activatedDate: {
           day: ad,
           month: am,
           year: ay
